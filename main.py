@@ -1,8 +1,7 @@
 import logging
 import asyncio
-from datetime import time
 from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, PicklePersistence
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, PicklePersistence, MessageHandler, filters
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import pytz
@@ -12,7 +11,8 @@ from handlers import (
     get_conversation_handler,
     push_command,
     button_callback,
-    send_daily_practice
+    send_daily_practice,
+    send_daily_practice_to_user
 )
 
 logging.basicConfig(
@@ -25,7 +25,6 @@ class JapaneseLearningBot:
     def __init__(self):
         self.application = None
         self.scheduler = AsyncIOScheduler()
-        self.user_ids = set()
     
     async def error_handler(self, update: Update, context):
         logger.error(f"Update {update} caused error {context.error}")
@@ -34,15 +33,20 @@ class JapaneseLearningBot:
         if not self.application:
             return
         
-        for user_id in self.user_ids:
-            try:
-                await send_daily_practice(self.application.context_types.context, user_id)
-            except Exception as e:
-                logger.error(f"Failed to send daily practice to user {user_id}: {e}")
+        # Get persistence data
+        persistence = self.application.persistence
+        if persistence:
+            user_data = await persistence.get_user_data()
+            for user_id in user_data:
+                try:
+                    level = user_data[user_id].get('level', 'N3')
+                    await send_daily_practice_to_user(self.application.bot, user_id, level)
+                except Exception as e:
+                    logger.error(f"Failed to send daily practice to user {user_id}: {e}")
     
     def track_user(self, update: Update, context):
-        if update.effective_user:
-            self.user_ids.add(update.effective_user.id)
+        # User tracking is now handled by persistence
+        pass
     
     async def post_init(self, application: Application):
         hour, minute = config.daily_time.split(":")
@@ -90,11 +94,11 @@ class JapaneseLearningBot:
         
         self.application.add_error_handler(self.error_handler)
         
-        for handler in self.application.handlers[0]:
-            handler.callback = lambda update, context: (
-                handler.callback(update, context),
-                self.track_user(update, context)
-            )[-1]
+        # Add a pre-process handler to track users
+        async def track_user_handler(update: Update, context):
+            self.track_user(update, context)
+        
+        self.application.add_handler(MessageHandler(filters.ALL, track_user_handler), group=-1)
         
         logger.info("Bot started!")
         self.application.run_polling(allowed_updates=Update.ALL_TYPES)

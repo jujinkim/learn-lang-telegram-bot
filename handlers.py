@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 from utils import data_manager, wordbook_manager, audio_generator, user_data_manager
 from llm import llm_manager
@@ -44,6 +44,46 @@ async def level_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     
     return ConversationHandler.END
+
+async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
+    conversation = data_manager.get_conversation_by_level(level)
+    
+    if not conversation:
+        await bot.send_message(
+            chat_id=user_id,
+            text=f"죄송합니다. {level} 레벨의 문장을 찾을 수 없습니다."
+        )
+        return
+    
+    audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
+    
+    keyboard = [
+        [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
+        [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
+        [InlineKeyboardButton("🔁 다시 듣기", callback_data=f"replay_{conversation['id']}")],
+        [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
+        [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
+        [InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    caption = f"🌸 오늘의 일본어 연습 ({level})"
+    
+    if audio_file and os.path.exists(audio_file):
+        with open(audio_file, 'rb') as audio:
+            await bot.send_audio(
+                chat_id=user_id,
+                audio=audio,
+                caption=caption,
+                reply_markup=reply_markup
+            )
+    else:
+        await bot.send_message(
+            chat_id=user_id,
+            text=caption + "\n\n⚠️ 음성 파일 생성 중 오류가 발생했습니다.",
+            reply_markup=reply_markup
+        )
 
 async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     level = user_data_manager.get_user_level(context)

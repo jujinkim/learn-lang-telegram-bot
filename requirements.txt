@@ -1,6 +1,7 @@
 python-telegram-bot>=20.0
 python-dotenv
 apscheduler
+pytz
 gtts
 openai
 anthropic
