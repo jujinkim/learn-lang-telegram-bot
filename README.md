@@ -22,7 +22,7 @@ pip install -r requirements.txt
    - Copy `.env.example` to `.env` or `config.json.example` to `config.json`
    - Add your Telegram bot token
    - Add your LLM API key (OpenAI or Claude)
-   - Set admin user IDs (optional)
+   - Set your Telegram user ID in ADMIN_IDS (for manual /push command)
 
 3. Run the bot:
 ```bash
@@ -36,14 +36,14 @@ The bot can be configured using either environment variables (.env file) or a co
 - `BOT_TOKEN`: Your Telegram bot token from @BotFather
 - `LLM_PROVIDER`: Either "openai" or "claude"
 - `LLM_API_KEY`: Your API key for the chosen LLM provider
-- `ADMIN_IDS`: Comma-separated list of admin user IDs (for /push command)
+- `ADMIN_IDS`: Your Telegram user ID (allows you to use /push command to manually trigger practice)
 - `TIMEZONE`: Timezone for daily messages (default: Asia/Seoul)
 - `DAILY_TIME`: Time for daily broadcast (default: 09:00)
 
 ## Commands
 
 - `/start` - Initialize bot and select language level
-- `/push` - (Admin only) Manually send daily practice
+- `/push` - Manually trigger daily practice (requires your user ID in ADMIN_IDS)
 
 ## Project Structure
 
