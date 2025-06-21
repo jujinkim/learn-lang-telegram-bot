@@ -12,9 +12,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     welcome_message = (
         f"안녕하세요 {user.first_name}님! 👋\n\n"
-        "저는 일본어 듣기와 번역 연습을 도와드리는 봇입니다.\n\n"
-        "매일 아침 9시에 일본어 문장을 음성과 함께 보내드려요.\n"
-        "먼저 JLPT 레벨을 선택해주세요:"
+        "저는 언어 학습을 도와드리는 봇입니다.\n"
+        "현재 일본어를 지원하며, 곧 더 많은 언어가 추가될 예정입니다.\n\n"
+        "매일 아침 9시에 학습 문장을 음성과 함께 보내드려요.\n"
+        "먼저 일본어 레벨을 선택해주세요:"
     )
     
     keyboard = [
@@ -38,8 +39,8 @@ async def level_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data_manager.set_user_level(context, level)
     
     await query.edit_message_text(
-        f"레벨 {level}을 선택하셨습니다! ✅\n\n"
-        "이제 매일 아침 9시에 일본어 문장을 받아보실 수 있습니다.\n"
+        f"일본어 레벨 {level}을 선택하셨습니다! ✅\n\n"
+        "이제 매일 아침 9시에 학습 문장을 받아보실 수 있습니다.\n"
         "바로 연습을 시작하려면 /push 명령어를 사용해주세요."
     )
     
@@ -68,7 +69,7 @@ async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    caption = f"🌸 오늘의 일본어 연습 ({level})"
+    caption = f"🌸 오늘의 학습 - 일본어 ({level})"
     
     if audio_file and os.path.exists(audio_file):
         with open(audio_file, 'rb') as audio:
@@ -111,7 +112,7 @@ async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    caption = f"🌸 오늘의 일본어 연습 ({level})"
+    caption = f"🌸 오늘의 학습 - 일본어 ({level})"
     
     if audio_file and os.path.exists(audio_file):
         with open(audio_file, 'rb') as audio:
@@ -217,7 +218,8 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     evaluation = await llm_manager.evaluate_translation(
         quiz_data["jp"],
         user_translation,
-        quiz_data["kr"]
+        quiz_data["kr"],
+        "일본어"
     )
     
     result_message = (

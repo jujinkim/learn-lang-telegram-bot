@@ -1,12 +1,12 @@
-# Japanese Learning Telegram Bot
+# Language Learning Telegram Bot
 
-A Telegram bot that helps users practice Japanese listening and translation with daily exercises.
+A Telegram bot that helps users practice language listening and translation with daily exercises. Currently supports Japanese with plans to add more languages.
 
 ## Features
 
-- 🎌 Daily Japanese practice at 9:00 AM (Asia/Seoul timezone)
-- 🎧 Audio generation for Japanese sentences (using gTTS)
-- 📚 JLPT level selection (N1-N5)
+- 🎌 Daily language practice at 9:00 AM (Asia/Seoul timezone)
+- 🎧 Audio generation for language sentences (using gTTS)
+- 📚 Level selection (Japanese: JLPT N1-N5)
 - 💾 Personal wordbook for each user
 - 🎯 Quiz mode with LLM-powered translation evaluation
 - 🤖 Support for OpenAI and Claude LLMs
@@ -42,7 +42,7 @@ The bot can be configured using either environment variables (.env file) or a co
 
 ## Commands
 
-- `/start` - Initialize bot and select JLPT level
+- `/start` - Initialize bot and select language level
 - `/push` - (Admin only) Manually send daily practice
 
 ## Project Structure
@@ -52,7 +52,7 @@ The bot can be configured using either environment variables (.env file) or a co
 - `config.py` - Configuration management
 - `utils.py` - Data management and audio generation
 - `llm.py` - LLM integration for translation evaluation
-- `data.json` - Japanese conversation database
+- `data.json` - Language conversation database (currently Japanese)
 
 ## Data Format
 
@@ -65,3 +65,8 @@ Conversations are stored in `data.json` with the following structure:
   "kr": "주문은 정하셨나요？"
 }
 ```
+
+## Supported Languages
+
+- 🇯🇵 Japanese (JLPT N1-N5 levels)
+- 🌐 More languages coming soon...

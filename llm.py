@@ -4,7 +4,7 @@ from typing import Optional
 from config import config
 
 class LLMProvider:
-    async def evaluate_translation(self, japanese: str, user_translation: str, correct_translation: str) -> str:
+    async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
         raise NotImplementedError
 
 class OpenAIProvider(LLMProvider):
@@ -12,9 +12,9 @@ class OpenAIProvider(LLMProvider):
         self.api_key = api_key
         self.api_url = "https://api.openai.com/v1/chat/completions"
     
-    async def evaluate_translation(self, japanese: str, user_translation: str, correct_translation: str) -> str:
-        prompt = f"""다음 일본어 번역을 평가해주세요:
-일본어: {japanese}
+    async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
+        prompt = f"""다음 {source_lang} 번역을 평가해주세요:
+{source_lang}: {source_text}
 사용자 번역: {user_translation}
 정답 번역: {correct_translation}
 
@@ -30,7 +30,7 @@ class OpenAIProvider(LLMProvider):
         data = {
             "model": "gpt-3.5-turbo",
             "messages": [
-                {"role": "system", "content": "당신은 일본어 번역을 평가하는 선생님입니다."},
+                {"role": "system", "content": "당신은 언어 번역을 평가하는 선생님입니다."},
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.7,
@@ -54,9 +54,9 @@ class ClaudeProvider(LLMProvider):
         self.api_key = api_key
         self.api_url = "https://api.anthropic.com/v1/messages"
     
-    async def evaluate_translation(self, japanese: str, user_translation: str, correct_translation: str) -> str:
-        prompt = f"""다음 일본어 번역을 평가해주세요:
-일본어: {japanese}
+    async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
+        prompt = f"""다음 {source_lang} 번역을 평가해주세요:
+{source_lang}: {source_text}
 사용자 번역: {user_translation}
 정답 번역: {correct_translation}
 
@@ -105,9 +105,9 @@ class LLMManager:
         else:
             return None
     
-    async def evaluate_translation(self, japanese: str, user_translation: str, correct_translation: str) -> str:
+    async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
         if self.provider:
-            return await self.provider.evaluate_translation(japanese, user_translation, correct_translation)
+            return await self.provider.evaluate_translation(source_text, user_translation, correct_translation, source_lang)
         return "LLM 제공자가 설정되지 않았습니다."
 
 llm_manager = LLMManager()
