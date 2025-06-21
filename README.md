@@ -70,3 +70,7 @@ Conversations are stored in `data.json` with the following structure:
 
 - 🇯🇵 Japanese (JLPT N1-N5 levels)
 - 🌐 More languages coming soon...
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
