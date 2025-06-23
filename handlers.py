@@ -7,6 +7,17 @@ import os
 
 SELECTING_LEVEL, QUIZ_MODE = range(2)
 
+def get_practice_keyboard(conversation):
+    """Generate the standard practice keyboard layout"""
+    return [
+        [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
+        [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
+        [InlineKeyboardButton("🔁 다시 듣기", callback_data=f"replay_{conversation['id']}")],
+        [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
+        [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
+        [InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
+    ]
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     
@@ -58,14 +69,7 @@ async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
     
     audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
     
-    keyboard = [
-        [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
-        [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
-        [InlineKeyboardButton("🔁 다시 듣기", callback_data=f"replay_{conversation['id']}")],
-        [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
-        [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
-        [InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
-    ]
+    keyboard = get_practice_keyboard(conversation)
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -101,14 +105,7 @@ async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     
     audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
     
-    keyboard = [
-        [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
-        [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
-        [InlineKeyboardButton("🔁 다시 듣기", callback_data=f"replay_{conversation['id']}")],
-        [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
-        [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
-        [InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
-    ]
+    keyboard = get_practice_keyboard(conversation)
     
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -164,6 +161,34 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     parts = data.split("_")
     action = parts[0]
+    
+    if action == "show":
+        lang = parts[1]  # jp or kr
+        conv_id = int(parts[2]) if len(parts) > 2 else None
+        
+        conversation = data_manager.get_conversation_by_id(conv_id)
+        if not conversation:
+            await query.edit_message_text("문장을 찾을 수 없습니다.")
+            return
+        
+        # Create keyboard with back button
+        keyboard = get_practice_keyboard(conversation)
+        keyboard.append([InlineKeyboardButton("🔙 돌아가기", callback_data=f"back_{conversation['id']}")])
+        reply_markup = InlineKeyboardMarkup(keyboard)
+            
+        if lang == "jp":
+            await query.edit_message_caption(
+                caption=f"🇯🇵 일본어: {conversation['jp']}",
+                reply_markup=reply_markup
+            )
+        elif lang == "kr":
+            await query.edit_message_caption(
+                caption=f"🇰🇷 한국어: {conversation['kr']}",
+                reply_markup=reply_markup
+            )
+        return
+    
+    # For all other actions (replay, save, quiz)
     conv_id = int(parts[1]) if len(parts) > 1 else None
     
     conversation = data_manager.get_conversation_by_id(conv_id)
@@ -171,17 +196,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("문장을 찾을 수 없습니다.")
         return
     
-    if action == "show":
-        if parts[1] == "jp":
-            await query.edit_message_caption(
-                caption=f"🇯🇵 일본어: {conversation['jp']}"
-            )
-        elif parts[1] == "kr":
-            await query.edit_message_caption(
-                caption=f"🇰🇷 한국어: {conversation['kr']}"
-            )
-    
-    elif action == "replay":
+    if action == "replay":
         audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
         if audio_file and os.path.exists(audio_file):
             with open(audio_file, 'rb') as audio:
@@ -200,10 +215,27 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     elif action == "quiz":
         user_data_manager.set_quiz_data(context, conversation)
+        
+        # Create quiz keyboard with back button
+        quiz_keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data=f"back_{conversation['id']}")]]
+        quiz_markup = InlineKeyboardMarkup(quiz_keyboard)
+        
         await query.edit_message_caption(
-            caption=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {conversation['jp']}\n\n번역을 입력해주세요:"
+            caption=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {conversation['jp']}\n\n번역을 입력해주세요:",
+            reply_markup=quiz_markup
         )
         return QUIZ_MODE
+    
+    elif action == "back":
+        # Return to original practice view
+        level = user_data_manager.get_user_level(context)
+        keyboard = get_practice_keyboard(conversation)
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_caption(
+            caption=f"🌸 오늘의 학습 - 일본어 ({level})",
+            reply_markup=reply_markup
+        )
 
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_translation = update.message.text
