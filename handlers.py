@@ -224,7 +224,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             caption=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {conversation['jp']}\n\n번역을 입력해주세요:",
             reply_markup=quiz_markup
         )
-        return QUIZ_MODE
+        # Don't return QUIZ_MODE here since this is not part of ConversationHandler
     
     elif action == "back":
         # Return to original practice view
@@ -269,6 +269,39 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user_data_manager.clear_quiz_data(context)
     return ConversationHandler.END
+
+async def quiz_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle text messages when user is in quiz mode"""
+    quiz_data = user_data_manager.get_quiz_data(context)
+    
+    if not quiz_data:
+        return  # Not in quiz mode, ignore
+    
+    user_translation = update.message.text
+    
+    await update.message.reply_text("평가 중입니다... ⏳")
+    
+    evaluation = await llm_manager.evaluate_translation(
+        quiz_data["jp"],
+        user_translation,
+        quiz_data["kr"],
+        "일본어"
+    )
+    
+    result_message = (
+        f"📊 평가 결과\n\n"
+        f"일본어: {quiz_data['jp']}\n"
+        f"정답: {quiz_data['kr']}\n"
+        f"당신의 답: {user_translation}\n\n"
+        f"{evaluation}"
+    )
+    
+    keyboard = get_practice_keyboard(quiz_data)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    await update.message.reply_text(result_message, reply_markup=reply_markup)
+    
+    user_data_manager.clear_quiz_data(context)
 
 async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query

@@ -12,7 +12,8 @@ from handlers import (
     push_command,
     button_callback,
     send_daily_practice,
-    send_daily_practice_to_user
+    send_daily_practice_to_user,
+    quiz_text_handler
 )
 
 logging.basicConfig(
@@ -90,6 +91,11 @@ class JapaneseLearningBot:
         
         self.application.add_handler(
             CallbackQueryHandler(button_callback, pattern="^(show_|replay_|save_|quiz_|back_|change_level)")
+        )
+        
+        # Add quiz text handler for when users are in quiz mode
+        self.application.add_handler(
+            MessageHandler(filters.TEXT & ~filters.COMMAND, quiz_text_handler)
         )
         
         self.application.add_error_handler(self.error_handler)
