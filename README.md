@@ -27,7 +27,7 @@ pip install -r requirements.txt
 3. **Get your Telegram user ID** (required for admin access):
    - Open Telegram and search for `@userinfobot`
    - Send `/start` to the bot
-   - It will reply with your user ID (e.g., `your_user_id_here`)
+   - It will reply with your user ID (e.g., `123456789`)
    - Copy this number - you'll need it for the next step
 
 4. **Configure the bot**:
