@@ -141,6 +141,27 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     data = query.data
     
+    if data == "new_quiz":
+        # Start a new quiz with a random conversation
+        level = user_data_manager.get_user_level(context)
+        new_conversation = data_manager.get_conversation_by_level(level)
+        
+        if not new_conversation:
+            await query.edit_message_text("죄송합니다. 새로운 퀴즈를 찾을 수 없습니다.")
+            return
+        
+        user_data_manager.set_quiz_data(context, new_conversation)
+        
+        # Create quiz keyboard with back button
+        quiz_keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data="back_to_menu")]]
+        quiz_markup = InlineKeyboardMarkup(quiz_keyboard)
+        
+        await query.edit_message_text(
+            text=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {new_conversation['jp']}\n\n번역을 입력해주세요:",
+            reply_markup=quiz_markup
+        )
+        return
+    
     if data == "change_level":
         keyboard = [
             [InlineKeyboardButton("N5 (초급)", callback_data="level_N5")],
@@ -298,10 +319,10 @@ async def quiz_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Create quiz result specific keyboard
     keyboard = [
-        [InlineKeyboardButton("🎯 다시 퀴즈", callback_data=f"quiz_{quiz_data['id']}")],
+        [InlineKeyboardButton("🎯 다른 퀴즈", callback_data="new_quiz")],
         [InlineKeyboardButton("🔁 다시 듣기", callback_data=f"replay_{quiz_data['id']}")],
         [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{quiz_data['id']}")],
-        [InlineKeyboardButton("🔙 메뉴로 돌아가기", callback_data=f"back_to_menu")]
+        [InlineKeyboardButton("🔙 메뉴로 돌아가기", callback_data="back_to_menu")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
