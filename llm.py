@@ -29,7 +29,7 @@ class OpenAIProvider(LLMProvider):
         }
         
         data = {
-            "model": "gpt-3.5-turbo",
+            "model": "gpt-4o-mini",
             "messages": [
                 {"role": "system", "content": "당신은 언어 번역을 평가하는 선생님입니다."},
                 {"role": "user", "content": prompt}
@@ -72,7 +72,7 @@ class ClaudeProvider(LLMProvider):
         }
         
         data = {
-            "model": "claude-3-sonnet-20240229",
+            "model": "claude-3-haiku-20240307",
             "messages": [
                 {
                     "role": "user",
