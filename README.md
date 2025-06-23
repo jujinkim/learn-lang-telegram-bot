@@ -24,19 +24,27 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. **Configure the bot**:
+3. **Get your Telegram user ID** (required for admin access):
+   - Open Telegram and search for `@userinfobot`
+   - Send `/start` to the bot
+   - It will reply with your user ID (e.g., `your_user_id_here`)
+   - Copy this number - you'll need it for the next step
+
+4. **Configure the bot**:
    - Copy `config.json.example` to `config.json` and fill in your details, OR
    - Create a `.env` file with the following variables:
    ```
    BOT_TOKEN=your_telegram_bot_token_here
    LLM_PROVIDER=claude  # or openai, gemini
    LLM_API_KEY=your_llm_api_key_here
-   ADMIN_IDS=your_telegram_user_id_here
+   ADMIN_IDS=your_user_id_here  # Replace with YOUR user ID from step 3
    TIMEZONE=Asia/Seoul
    DAILY_TIME=09:00
    ```
+   
+   **Important**: `ADMIN_IDS` should be YOUR personal Telegram user ID, not the bot's ID. This allows you to use the `/push` command.
 
-4. **Get your bot's user ID** (optional, for reference):
+5. **Get your bot's user ID** (optional, for reference):
 ```bash
 # This will automatically add BOT_USER_ID to your .env file
 python3 -c "
