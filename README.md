@@ -9,7 +9,7 @@ A Telegram bot that helps users practice language listening and translation with
 - 📚 Level selection (Japanese: JLPT N1-N5)
 - 💾 Personal wordbook for each user
 - 🎯 Quiz mode with LLM-powered translation evaluation
-- 🤖 Support for OpenAI and Claude LLMs
+- 🤖 Support for OpenAI, Claude, and Gemini LLMs
 
 ## Setup
 
@@ -21,7 +21,7 @@ pip install -r requirements.txt
 2. Configure the bot:
    - Copy `.env.example` to `.env` or `config.json.example` to `config.json`
    - Add your Telegram bot token
-   - Add your LLM API key (OpenAI or Claude)
+   - Add your LLM API key (OpenAI, Claude, or Gemini)
    - Set your Telegram user ID in ADMIN_IDS (for manual /push command)
 
 3. Run the bot:
@@ -34,7 +34,7 @@ python main.py
 The bot can be configured using either environment variables (.env file) or a config.json file:
 
 - `BOT_TOKEN`: Your Telegram bot token from @BotFather
-- `LLM_PROVIDER`: Either "openai" or "claude"
+- `LLM_PROVIDER`: Either "openai", "claude", or "gemini"
 - `LLM_API_KEY`: Your API key for the chosen LLM provider
 - `ADMIN_IDS`: Your Telegram user ID (allows you to use /push command to manually trigger practice)
 - `TIMEZONE`: Timezone for daily messages (default: Asia/Seoul)

@@ -2,6 +2,7 @@ import aiohttp
 import json
 from typing import Optional
 from config import config
+import google.generativeai as genai
 
 class LLMProvider:
     async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
@@ -93,6 +94,29 @@ class ClaudeProvider(LLMProvider):
             print(f"Claude API error: {e}")
             return "평가 중 오류가 발생했습니다."
 
+class GeminiProvider(LLMProvider):
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
+        prompt = f"""다음 {source_lang} 번역을 평가해주세요:
+{source_lang}: {source_text}
+사용자 번역: {user_translation}
+정답 번역: {correct_translation}
+
+0-100점으로 점수를 매기고, 한국어로 짧은 피드백을 제공해주세요.
+형식: 점수: X점
+피드백: (피드백 내용)"""
+        
+        try:
+            response = await self.model.generate_content_async(prompt)
+            return response.text
+        except Exception as e:
+            print(f"Gemini API error: {e}")
+            return "평가 중 오류가 발생했습니다."
+
 class LLMManager:
     def __init__(self):
         self.provider = self._create_provider()
@@ -102,6 +126,8 @@ class LLMManager:
             return OpenAIProvider(config.llm_api_key)
         elif config.llm_provider == "claude":
             return ClaudeProvider(config.llm_api_key)
+        elif config.llm_provider == "gemini":
+            return GeminiProvider(config.llm_api_key)
         else:
             return None
     

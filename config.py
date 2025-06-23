@@ -42,7 +42,7 @@ class Config:
             return False, "BOT_TOKEN is required"
         if not self.llm_api_key:
             return False, "LLM_API_KEY is required"
-        if self.llm_provider not in ["openai", "claude"]:
+        if self.llm_provider not in ["openai", "claude", "gemini"]:
             return False, f"Unsupported LLM_PROVIDER: {self.llm_provider}"
         return True, None
 
