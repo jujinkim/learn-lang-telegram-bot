@@ -89,7 +89,7 @@ class JapaneseLearningBot:
         self.application.add_handler(CommandHandler("push", push_command))
         
         self.application.add_handler(
-            CallbackQueryHandler(button_callback, pattern="^(show_|replay_|save_|quiz_|change_level)")
+            CallbackQueryHandler(button_callback, pattern="^(show_|replay_|save_|quiz_|back_|change_level)")
         )
         
         self.application.add_error_handler(self.error_handler)
