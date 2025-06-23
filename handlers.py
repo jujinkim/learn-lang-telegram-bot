@@ -296,7 +296,13 @@ async def quiz_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"{evaluation}"
     )
     
-    keyboard = get_practice_keyboard(quiz_data)
+    # Create quiz result specific keyboard
+    keyboard = [
+        [InlineKeyboardButton("🎯 다시 퀴즈", callback_data=f"quiz_{quiz_data['id']}")],
+        [InlineKeyboardButton("🔁 다시 듣기", callback_data=f"replay_{quiz_data['id']}")],
+        [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{quiz_data['id']}")],
+        [InlineKeyboardButton("🔙 메뉴로 돌아가기", callback_data=f"back_to_menu")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(result_message, reply_markup=reply_markup)
