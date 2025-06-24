@@ -73,7 +73,7 @@ class DataManager:
             print(f"📚 Using stored conversation ID {conv['id']}")
             return conv
             
-        print(f"❌ No conversations available for level {level}")
+        print(f"❌ {level} 레벨에 사용 가능한 대화가 없습니다")
         return None
     
     async def _save_generated_conversation(self, conversation: Dict):
