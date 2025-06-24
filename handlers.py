@@ -25,7 +25,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"안녕하세요 {user.first_name}님! 👋\n\n"
         "저는 언어 학습을 도와드리는 봇입니다.\n"
         "현재 일본어를 지원하며, 곧 더 많은 언어가 추가될 예정입니다.\n\n"
-        "매일 아침 9시에 학습 문장을 음성과 함께 보내드려요.\n"
+        "오전 9시부터 오후 11시까지 매시간 학습 문장을 보내드려요.\n"
         "먼저 일본어 레벨을 선택해주세요:"
     )
     
