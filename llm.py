@@ -33,13 +33,13 @@ User translation: {user_translation}
 Correct translation: {correct_translation}
 
 Scoring:
-- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "괜찮은 표현"
+- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "맞아요"
 - Correct but unnatural: 3 stars
 - Partially correct: 1-2 stars
 
 Format:
 Stars: ⭐⭐⭐⭐⭐ (1-5)
-Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부자연스러움", "의미 불명확", "잘했어요")"""
+Feedback: 1-2 Korean words only (e.g. "좋아요", "맞아요", "어색함", "틀림", "애매함")"""
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -143,16 +143,25 @@ Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부
             return []
     
     async def generate_furigana(self, japanese_text: str) -> str:
-        prompt = f"""다음 일본어 문장에 대해 히라가나 읽기(후리가나)를 제공해주세요.
+        prompt = f"""Convert this Japanese text to hiragana reading (furigana):
 
-일본어: {japanese_text}
+Japanese: {japanese_text}
 
-형식: 히라가나 읽기만 한 줄로 출력해주세요.
-예시:
-입력: 今日は良い天気ですね
-출력: きょうは よい てんき ですね
+Rules:
+- Convert ALL kanji to hiragana
+- Keep existing hiragana as-is
+- Add spaces between words for readability
+- Separate particles (は, を, に, で, etc.) with spaces
+- Output ONLY the hiragana reading, nothing else
 
-히라가나 읽기:"""
+Examples:
+Input: 今日は良い天気ですね
+Output: きょう は よい てんき です ね
+
+Input: 私は学校に行きます
+Output: わたし は がっこう に いき ます
+
+Hiragana reading:"""
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -201,13 +210,13 @@ User translation: {user_translation}
 Correct translation: {correct_translation}
 
 Scoring:
-- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "괜찮은 표현"
+- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "맞아요"
 - Correct but unnatural: 3 stars
 - Partially correct: 1-2 stars
 
 Format:
 Stars: ⭐⭐⭐⭐⭐ (1-5)
-Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부자연스러움", "의미 불명확", "잘했어요")"""
+Feedback: 1-2 Korean words only (e.g. "좋아요", "맞아요", "어색함", "틀림", "애매함")"""
         
         headers = {
             "x-api-key": self.api_key,
@@ -315,16 +324,25 @@ Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부
             return []
     
     async def generate_furigana(self, japanese_text: str) -> str:
-        prompt = f"""다음 일본어 문장에 대해 히라가나 읽기(후리가나)를 제공해주세요.
+        prompt = f"""Convert this Japanese text to hiragana reading (furigana):
 
-일본어: {japanese_text}
+Japanese: {japanese_text}
 
-형식: 히라가나 읽기만 한 줄로 출력해주세요.
-예시:
-입력: 今日は良い天気ですね
-출력: きょうは よい てんき ですね
+Rules:
+- Convert ALL kanji to hiragana
+- Keep existing hiragana as-is
+- Add spaces between words for readability
+- Separate particles (は, を, に, で, etc.) with spaces
+- Output ONLY the hiragana reading, nothing else
 
-히라가나 읽기:"""
+Examples:
+Input: 今日は良い天気ですね
+Output: きょう は よい てんき です ね
+
+Input: 私は学校に行きます
+Output: わたし は がっこう に いき ます
+
+Hiragana reading:"""
         
         headers = {
             "x-api-key": self.api_key,
@@ -376,13 +394,13 @@ User translation: {user_translation}
 Correct translation: {correct_translation}
 
 Scoring:
-- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "괜찮은 표현"
+- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "맞아요"
 - Correct but unnatural: 3 stars
 - Partially correct: 1-2 stars
 
 Format:
 Stars: ⭐⭐⭐⭐⭐ (1-5)
-Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부자연스러움", "의미 불명확", "잘했어요")"""
+Feedback: 1-2 Korean words only (e.g. "좋아요", "맞아요", "어색함", "틀림", "애매함")"""
         
         try:
             response = await self.model.generate_content_async(prompt)
@@ -445,16 +463,25 @@ Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부
             return []
     
     async def generate_furigana(self, japanese_text: str) -> str:
-        prompt = f"""다음 일본어 문장에 대해 히라가나 읽기(후리가나)를 제공해주세요.
+        prompt = f"""Convert this Japanese text to hiragana reading (furigana):
 
-일본어: {japanese_text}
+Japanese: {japanese_text}
 
-형식: 히라가나 읽기만 한 줄로 출력해주세요.
-예시:
-입력: 今日は良い天気ですね
-출력: きょうは よい てんき ですね
+Rules:
+- Convert ALL kanji to hiragana
+- Keep existing hiragana as-is
+- Add spaces between words for readability
+- Separate particles (は, を, に, で, etc.) with spaces
+- Output ONLY the hiragana reading, nothing else
 
-히라가나 읽기:"""
+Examples:
+Input: 今日は良い天気ですね
+Output: きょう は よい てんき です ね
+
+Input: 私は学校に行きます
+Output: わたし は がっこう に いき ます
+
+Hiragana reading:"""
         
         try:
             response = await self.model.generate_content_async(prompt)
