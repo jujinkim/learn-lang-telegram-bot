@@ -3,6 +3,13 @@ import json
 from typing import Optional
 from config import config
 import google.generativeai as genai
+import re
+
+def is_hiragana_only(text: str) -> bool:
+    """Check if text contains only hiragana, spaces, and common punctuation"""
+    # Allow hiragana (ぁ-ん), katakana (ァ-ヶ), spaces, and common Japanese punctuation
+    allowed_pattern = r'^[\u3040-\u309F\u30A0-\u30FF\s\u3000、。！？～ー]+$'
+    return bool(re.match(allowed_pattern, text))
 
 class LLMProvider:
     async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
@@ -171,9 +178,11 @@ class OpenAIProvider(LLMProvider):
                         # Extract just the hiragana line
                         lines = content.split('\n')
                         for line in lines:
-                            if line and not any(char in line for char in '漢字한글abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
-                                return line.strip()
-                        return content
+                            line = line.strip()
+                            if line and is_hiragana_only(line):
+                                return line
+                        # If no pure hiragana line found, return empty string
+                        return ""
                     else:
                         return ""
         except Exception as e:
@@ -343,9 +352,11 @@ class ClaudeProvider(LLMProvider):
                         # Extract just the hiragana line
                         lines = content.split('\n')
                         for line in lines:
-                            if line and not any(char in line for char in '漢字한글abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
-                                return line.strip()
-                        return content
+                            line = line.strip()
+                            if line and is_hiragana_only(line):
+                                return line
+                        # If no pure hiragana line found, return empty string
+                        return ""
                     else:
                         return ""
         except Exception as e:
@@ -451,9 +462,11 @@ class GeminiProvider(LLMProvider):
             # Extract just the hiragana line
             lines = content.split('\n')
             for line in lines:
-                if line and not any(char in line for char in '漢字한글abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
-                    return line.strip()
-            return content
+                line = line.strip()
+                if line and is_hiragana_only(line):
+                    return line
+            # If no pure hiragana line found, return empty string
+            return ""
         except Exception as e:
             print(f"Gemini furigana error: {e}")
             return ""
