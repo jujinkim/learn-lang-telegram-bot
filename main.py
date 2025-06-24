@@ -40,12 +40,17 @@ class JapaneseLearningBot:
         persistence = self.application.persistence
         if persistence:
             user_data = await persistence.get_user_data()
-            for user_id in user_data:
-                try:
-                    level = user_data[user_id].get('level', 'N3')
-                    await send_daily_practice_to_user(self.application.bot, user_id, level)
-                except Exception as e:
-                    logger.error(f"Failed to send daily practice to user {user_id}: {e}")
+            if user_data:
+                for user_id in user_data:
+                    try:
+                        user_info = user_data[user_id]
+                        if user_info and hasattr(user_info, 'get'):
+                            level = user_info.get('level', 'N3')
+                        else:
+                            level = 'N3'  # Default level
+                        await send_daily_practice_to_user(self.application.bot, user_id, level)
+                    except Exception as e:
+                        logger.error(f"Failed to send daily practice to user {user_id}: {e}")
     
     def track_user(self, update: Update, context):
         # User tracking is now handled by persistence
