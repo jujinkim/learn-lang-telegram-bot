@@ -304,13 +304,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
             
         if lang == "jp":
-            await query.edit_message_caption(
-                caption=f"🇯🇵 일본어: {conversation['jp']}",
+            await query.edit_message_text(
+                text=f"🇯🇵 일본어: {conversation['jp']}",
                 reply_markup=reply_markup
             )
         elif lang == "kr":
-            await query.edit_message_caption(
-                caption=f"🇰🇷 한국어: {conversation['kr']}",
+            await query.edit_message_text(
+                text=f"🇰🇷 한국어: {conversation['kr']}",
                 reply_markup=reply_markup
             )
         return
@@ -363,8 +363,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         quiz_keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data=f"back_{conversation['id']}")]]
         quiz_markup = InlineKeyboardMarkup(quiz_keyboard)
         
-        await query.edit_message_caption(
-            caption=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {conversation['jp']}\n\n번역을 입력해주세요:",
+        await query.edit_message_text(
+            text=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {conversation['jp']}\n\n번역을 입력해주세요:",
             reply_markup=quiz_markup
         )
         # Don't return QUIZ_MODE here since this is not part of ConversationHandler
