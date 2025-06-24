@@ -286,7 +286,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lang = parts[1]  # jp or kr
         conv_id = int(parts[2]) if len(parts) > 2 else None
         
-        conversation = data_manager.get_conversation_by_id(conv_id)
+        # First check if it's the current daily conversation (for real-time generated ones)
+        daily_conversation = user_data_manager.get_daily_conversation(context)
+        if daily_conversation and daily_conversation.get('id') == conv_id:
+            conversation = daily_conversation
+        else:
+            # Fall back to stored conversations
+            conversation = data_manager.get_conversation_by_id(conv_id)
+        
         if not conversation:
             await query.edit_message_text("문장을 찾을 수 없습니다.")
             return
@@ -311,7 +318,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # For all other actions (replay, save, quiz)
     conv_id = int(parts[1]) if len(parts) > 1 else None
     
-    conversation = data_manager.get_conversation_by_id(conv_id)
+    # First check if it's the current daily conversation (for real-time generated ones)
+    daily_conversation = user_data_manager.get_daily_conversation(context)
+    if daily_conversation and daily_conversation.get('id') == conv_id:
+        conversation = daily_conversation
+    else:
+        # Fall back to stored conversations
+        conversation = data_manager.get_conversation_by_id(conv_id)
+    
     if not conversation:
         await query.edit_message_text("문장을 찾을 수 없습니다.")
         return
