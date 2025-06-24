@@ -297,6 +297,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(f"레벨이 {level}로 변경되었습니다! ✅")
         return
     
+    if data == "back_to_menu":
+        daily_conv = user_data_manager.get_daily_conversation(context)
+        if daily_conv:
+            await send_daily_practice(context, query.from_user.id)
+        else:
+            await query.edit_message_text("메뉴로 돌아갑니다. /push 명령어로 새로운 연습을 시작하세요.")
+        return
+    
     parts = data.split("_")
     action = parts[0]
     
