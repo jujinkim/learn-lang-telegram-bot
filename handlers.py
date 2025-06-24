@@ -252,6 +252,40 @@ async def toggle_realtime_command(update: Update, context: ContextTypes.DEFAULT_
         f"{'✅ 새로운 대화를 실시간으로 생성합니다' if current_mode else '📚 저장된 대화에서 선택합니다'}"
     )
 
+async def test_broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin command to test the broadcast function"""
+    user_id = str(update.effective_user.id)
+    admin_ids = config.admin_ids.split(',') if config.admin_ids else []
+    
+    if user_id not in admin_ids:
+        await update.message.reply_text("권한이 없습니다.")
+        return
+    
+    await update.message.reply_text("🧪 브로드캐스트 테스트를 시작합니다...")
+    
+    # Manually trigger broadcast logic
+    app = context.application
+    persistence = app.persistence
+    if persistence:
+        user_data = await persistence.get_user_data()
+        if user_data:
+            for uid in user_data:
+                try:
+                    user_info = user_data[uid]
+                    if user_info and hasattr(user_info, 'get'):
+                        level = user_info.get('level', 'N3')
+                    else:
+                        level = 'N3'
+                    await send_daily_practice_to_user(app.bot, uid, level)
+                except Exception as e:
+                    await update.message.reply_text(f"❌ 사용자 {uid} 전송 실패: {e}")
+                    return
+            await update.message.reply_text("✅ 브로드캐스트 테스트 완료!")
+        else:
+            await update.message.reply_text("❌ 사용자 데이터가 없습니다.")
+    else:
+        await update.message.reply_text("❌ 지속성 데이터에 접근할 수 없습니다.")
+
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()

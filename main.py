@@ -12,6 +12,7 @@ from handlers import (
     push_command,
     generate_command,
     toggle_realtime_command,
+    test_broadcast_command,
     button_callback,
     send_daily_practice,
     send_daily_practice_to_user,
@@ -33,13 +34,16 @@ class JapaneseLearningBot:
         logger.error(f"Update {update} caused error {context.error}")
     
     async def daily_broadcast(self):
+        logger.info("Daily broadcast triggered!")
         if not self.application:
+            logger.error("Application not available for broadcast")
             return
         
         # Get persistence data
         persistence = self.application.persistence
         if persistence:
             user_data = await persistence.get_user_data()
+            logger.info(f"Found user data: {list(user_data.keys()) if user_data else 'None'}")
             if user_data:
                 for user_id in user_data:
                     try:
@@ -48,9 +52,15 @@ class JapaneseLearningBot:
                             level = user_info.get('level', 'N3')
                         else:
                             level = 'N3'  # Default level
+                        logger.info(f"Sending daily practice to user {user_id} with level {level}")
                         await send_daily_practice_to_user(self.application.bot, user_id, level)
+                        logger.info(f"Successfully sent daily practice to user {user_id}")
                     except Exception as e:
                         logger.error(f"Failed to send daily practice to user {user_id}: {e}")
+            else:
+                logger.warning("No user data found for broadcast")
+        else:
+            logger.error("No persistence available for broadcast")
     
     def track_user(self, update: Update, context):
         # User tracking is now handled by persistence
@@ -96,6 +106,7 @@ class JapaneseLearningBot:
         self.application.add_handler(CommandHandler("push", push_command))
         self.application.add_handler(CommandHandler("generate", generate_command))
         self.application.add_handler(CommandHandler("toggle_realtime", toggle_realtime_command))
+        self.application.add_handler(CommandHandler("test_broadcast", test_broadcast_command))
         
         self.application.add_handler(
             CallbackQueryHandler(button_callback, pattern="^(show_|listen_|replay_|save_|quiz_|back_|change_level|new_quiz)")
