@@ -296,15 +296,23 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     
     if data == "new_quiz":
-        # Show waiting message first
-        await query.edit_message_text("새로운 퀴즈를 준비 중입니다... ⏳")
-        
         # Start a new quiz with a random conversation
         level = user_data_manager.get_user_level(context)
+        
+        # Send waiting message as a new message
+        waiting_msg = await context.bot.send_message(
+            chat_id=query.message.chat_id,
+            text="새로운 퀴즈를 준비 중입니다... ⏳"
+        )
+        
         new_conversation = await data_manager.get_conversation_by_level(level)
         
         if not new_conversation:
-            await query.edit_message_text("죄송합니다. 새로운 퀴즈를 찾을 수 없습니다.")
+            await context.bot.edit_message_text(
+                chat_id=query.message.chat_id,
+                message_id=waiting_msg.message_id,
+                text="죄송합니다. 새로운 퀴즈를 찾을 수 없습니다."
+            )
             return
         
         user_data_manager.set_quiz_data(context, new_conversation)
@@ -313,7 +321,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         quiz_keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data="back_to_menu")]]
         quiz_markup = InlineKeyboardMarkup(quiz_keyboard)
         
-        await query.edit_message_text(
+        # Replace waiting message with quiz
+        await context.bot.edit_message_text(
+            chat_id=query.message.chat_id,
+            message_id=waiting_msg.message_id,
             text=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {new_conversation['jp']}\n\n번역을 입력해주세요:",
             reply_markup=quiz_markup
         )
