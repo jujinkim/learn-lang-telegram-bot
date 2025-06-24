@@ -415,11 +415,21 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     if action == "listen" or action == "replay":
-        # Generate audio on-demand
-        await query.answer("음성을 생성하고 있습니다... ⏳")
+        # Send preparing audio message
+        preparing_msg = await context.bot.send_message(
+            chat_id=query.from_user.id,
+            text="preparing audio... ⏳"
+        )
         
+        # Generate audio on-demand
         audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
         if audio_file and os.path.exists(audio_file):
+            # Delete the preparing message
+            await context.bot.delete_message(
+                chat_id=query.from_user.id,
+                message_id=preparing_msg.message_id
+            )
+            
             with open(audio_file, 'rb') as audio:
                 caption = "🔊 일본어 듣기" if action == "listen" else "🔁 다시 듣기"
                 await context.bot.send_audio(
@@ -428,8 +438,10 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     caption=caption
                 )
         else:
-            await context.bot.send_message(
+            # Edit the preparing message to show error
+            await context.bot.edit_message_text(
                 chat_id=query.from_user.id,
+                message_id=preparing_msg.message_id,
                 text="⚠️ 음성 파일 생성 중 오류가 발생했습니다."
             )
     
