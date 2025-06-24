@@ -12,7 +12,7 @@ def get_practice_keyboard(conversation):
     return [
         [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
         [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
-        [InlineKeyboardButton("🔁 다시 듣기", callback_data=f"replay_{conversation['id']}")],
+        [InlineKeyboardButton("🔊 일본어 듣기", callback_data=f"listen_{conversation['id']}")],
         [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
         [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
         [InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
@@ -67,28 +67,26 @@ async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
         )
         return
     
-    audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
+    user_data_manager.set_daily_conversation(None, conversation)  # Store for button usage
     
     keyboard = get_practice_keyboard(conversation)
-    
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    caption = f"🌸 오늘의 학습 - 일본어 ({level})"
+    # Generate status indicator
+    realtime_indicator = "🔄 실시간 생성" if conversation.get("is_realtime", False) else "📚 저장된 대화"
     
-    if audio_file and os.path.exists(audio_file):
-        with open(audio_file, 'rb') as audio:
-            await bot.send_audio(
-                chat_id=user_id,
-                audio=audio,
-                caption=caption,
-                reply_markup=reply_markup
-            )
-    else:
-        await bot.send_message(
-            chat_id=user_id,
-            text=caption + "\n\n⚠️ 음성 파일 생성 중 오류가 발생했습니다.",
-            reply_markup=reply_markup
-        )
+    message_text = (
+        f"🌸 오늘의 학습 - 일본어 ({level})\n"
+        f"{realtime_indicator}\n\n"
+        f"🇯🇵 {conversation['jp']}\n\n"
+        f"버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
+    )
+    
+    await bot.send_message(
+        chat_id=user_id,
+        text=message_text,
+        reply_markup=reply_markup
+    )
 
 async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     level = user_data_manager.get_user_level(context)
@@ -103,28 +101,24 @@ async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     
     user_data_manager.set_daily_conversation(context, conversation)
     
-    audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
-    
     keyboard = get_practice_keyboard(conversation)
-    
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    caption = f"🌸 오늘의 학습 - 일본어 ({level})"
+    # Generate status indicator
+    realtime_indicator = "🔄 실시간 생성" if conversation.get("is_realtime", False) else "📚 저장된 대화"
     
-    if audio_file and os.path.exists(audio_file):
-        with open(audio_file, 'rb') as audio:
-            await context.bot.send_audio(
-                chat_id=user_id,
-                audio=audio,
-                caption=caption,
-                reply_markup=reply_markup
-            )
-    else:
-        await context.bot.send_message(
-            chat_id=user_id,
-            text=caption + "\n\n⚠️ 음성 파일 생성 중 오류가 발생했습니다.",
-            reply_markup=reply_markup
-        )
+    message_text = (
+        f"🌸 오늘의 학습 - 일본어 ({level})\n"
+        f"{realtime_indicator}\n\n"
+        f"🇯🇵 {conversation['jp']}\n\n"
+        f"버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
+    )
+    
+    await context.bot.send_message(
+        chat_id=user_id,
+        text=message_text,
+        reply_markup=reply_markup
+    )
 
 async def push_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -322,15 +316,24 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("문장을 찾을 수 없습니다.")
         return
     
-    if action == "replay":
+    if action == "listen" or action == "replay":
+        # Generate audio on-demand
+        await query.answer("음성을 생성하고 있습니다... ⏳")
+        
         audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
         if audio_file and os.path.exists(audio_file):
             with open(audio_file, 'rb') as audio:
+                caption = "🔊 일본어 듣기" if action == "listen" else "🔁 다시 듣기"
                 await context.bot.send_audio(
                     chat_id=query.from_user.id,
                     audio=audio,
-                    caption="🔁 다시 듣기"
+                    caption=caption
                 )
+        else:
+            await context.bot.send_message(
+                chat_id=query.from_user.id,
+                text="⚠️ 음성 파일 생성 중 오류가 발생했습니다."
+            )
     
     elif action == "save":
         saved = await wordbook_manager.save_to_wordbook(query.from_user.id, conversation)
