@@ -17,22 +17,101 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 class DataManager:
     def __init__(self):
         self.conversations = self._load_conversations()
+        self.realtime_generation = True  # Enable hybrid mode
     
     def _load_conversations(self) -> List[Dict]:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("conversations", [])
+        except FileNotFoundError:
+            return []
     
-    def get_conversation_by_level(self, level: str) -> Optional[Dict]:
-        level_conversations = [c for c in self.conversations if c["level"] == level]
+    def load_data(self):
+        """Reload conversations from file"""
+        self.conversations = self._load_conversations()
+    
+    async def get_conversation_by_level(self, level: str) -> Optional[Dict]:
+        """Hybrid approach: try real-time generation first, fallback to stored"""
+        
+        # Try real-time generation first
+        if self.realtime_generation:
+            try:
+                from llm import llm_manager
+                
+                # Generate a single fresh conversation
+                themes = ["daily_life", "restaurant", "business", "travel", "shopping", "emergency", "education", "work"]
+                theme = random.choice(themes)
+                
+                print(f"🔄 Generating real-time conversation: {level} {theme}")
+                conversations = await llm_manager.generate_conversations(level, theme, 1)
+                
+                if conversations and len(conversations) > 0:
+                    conv = conversations[0]
+                    # Add temporary ID and level
+                    conv["id"] = random.randint(100000, 999999)  # Temp ID for real-time
+                    conv["level"] = level
+                    conv["is_realtime"] = True
+                    
+                    print(f"✅ Real-time generation successful")
+                    
+                    # Optionally save to database for future use
+                    await self._save_generated_conversation(conv)
+                    
+                    return conv
+                else:
+                    print(f"❌ Real-time generation failed, falling back to stored")
+                    
+            except Exception as e:
+                print(f"⚠️ Real-time generation error: {e}, falling back to stored")
+        
+        # Fallback to stored conversations
+        level_conversations = [c for c in self.conversations if c.get("level") == level]
         if level_conversations:
-            return random.choice(level_conversations)
+            conv = random.choice(level_conversations)
+            conv["is_realtime"] = False
+            print(f"📚 Using stored conversation ID {conv['id']}")
+            return conv
+            
+        print(f"❌ No conversations available for level {level}")
         return None
+    
+    async def _save_generated_conversation(self, conversation: Dict):
+        """Optionally save generated conversations to build database"""
+        try:
+            # Remove temporary fields
+            conv_to_save = conversation.copy()
+            conv_to_save.pop("is_realtime", None)
+            
+            # Generate proper ID
+            max_id = max([c.get("id", 0) for c in self.conversations]) if self.conversations else 0
+            conv_to_save["id"] = max_id + 1
+            
+            # Add to memory
+            self.conversations.append(conv_to_save)
+            
+            # Save to file
+            data = {"conversations": self.conversations}
+            with open(DATA_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+                
+            print(f"💾 Saved conversation to database (ID: {conv_to_save['id']})")
+        except Exception as e:
+            print(f"⚠️ Failed to save conversation: {e}")
     
     def get_conversation_by_id(self, conv_id: int) -> Optional[Dict]:
         for conv in self.conversations:
             if conv["id"] == conv_id:
                 return conv
         return None
+    
+    def toggle_realtime_generation(self, enabled: bool = None):
+        """Toggle or set real-time generation mode"""
+        if enabled is None:
+            self.realtime_generation = not self.realtime_generation
+        else:
+            self.realtime_generation = enabled
+        return self.realtime_generation
 
 class WordbookManager:
     @staticmethod

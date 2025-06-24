@@ -58,7 +58,7 @@ async def level_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return ConversationHandler.END
 
 async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
-    conversation = data_manager.get_conversation_by_level(level)
+    conversation = await data_manager.get_conversation_by_level(level)
     
     if not conversation:
         await bot.send_message(
@@ -92,7 +92,7 @@ async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
 
 async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     level = user_data_manager.get_user_level(context)
-    conversation = data_manager.get_conversation_by_level(level)
+    conversation = await data_manager.get_conversation_by_level(level)
     
     if not conversation:
         await context.bot.send_message(
@@ -135,6 +135,111 @@ async def push_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await send_daily_practice(context, user_id)
 
+async def generate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin command to generate new conversations"""
+    user_id = str(update.effective_user.id)
+    admin_ids = config.admin_ids.split(',') if config.admin_ids else []
+    
+    if user_id not in admin_ids:
+        await update.message.reply_text("권한이 없습니다.")
+        return
+    
+    # Parse arguments: /generate <level> <theme> <count>
+    args = context.args
+    if len(args) < 3:
+        await update.message.reply_text(
+            "사용법: /generate <level> <theme> <count>\n"
+            "예: /generate N5 daily_life 10\n\n"
+            "Levels: N5, N4, N3, N2, N1\n"
+            "Themes: daily_life, restaurant, business, travel, shopping, emergency, education, work"
+        )
+        return
+    
+    level = args[0].upper()
+    theme = args[1].lower()
+    try:
+        count = int(args[2])
+    except ValueError:
+        await update.message.reply_text("Count는 숫자여야 합니다.")
+        return
+    
+    if level not in ["N5", "N4", "N3", "N2", "N1"]:
+        await update.message.reply_text("유효하지 않은 레벨입니다. N5, N4, N3, N2, N1 중 선택하세요.")
+        return
+    
+    if count > 50:
+        await update.message.reply_text("한 번에 최대 50개까지만 생성할 수 있습니다.")
+        return
+    
+    await update.message.reply_text(f"🤖 {level} {theme} 주제로 {count}개 대화를 생성 중입니다...")
+    
+    try:
+        # Generate conversations
+        conversations = await llm_manager.generate_conversations(level, theme, count)
+        
+        if conversations:
+            # Add to data.json
+            import json
+            try:
+                with open("data.json", "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except FileNotFoundError:
+                data = {"conversations": []}
+            
+            existing_conversations = data.get("conversations", [])
+            next_id = max([c["id"] for c in existing_conversations]) + 1 if existing_conversations else 1
+            
+            # Add IDs and level to new conversations
+            for conv in conversations:
+                conv["id"] = next_id
+                conv["level"] = level
+                existing_conversations.append(conv)
+                next_id += 1
+            
+            # Save back to file
+            data["conversations"] = existing_conversations
+            with open("data.json", "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            # Reload data manager
+            data_manager.load_data()
+            
+            await update.message.reply_text(
+                f"✅ {len(conversations)}개 대화가 성공적으로 생성되었습니다!\n"
+                f"총 대화 수: {len(existing_conversations)}개"
+            )
+            
+            # Show sample
+            if conversations:
+                sample = conversations[0]
+                await update.message.reply_text(
+                    f"생성된 샘플:\n🇯🇵 {sample['jp']}\n🇰🇷 {sample['kr']}"
+                )
+        else:
+            await update.message.reply_text("❌ 대화 생성에 실패했습니다.")
+            
+    except Exception as e:
+        await update.message.reply_text(f"❌ 오류가 발생했습니다: {str(e)}")
+        print(f"Generate command error: {e}")
+
+async def toggle_realtime_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin command to toggle real-time generation mode"""
+    user_id = str(update.effective_user.id)
+    admin_ids = config.admin_ids.split(',') if config.admin_ids else []
+    
+    if user_id not in admin_ids:
+        await update.message.reply_text("권한이 없습니다.")
+        return
+    
+    # Toggle mode
+    current_mode = data_manager.toggle_realtime_generation()
+    mode_text = "활성화" if current_mode else "비활성화"
+    
+    await update.message.reply_text(
+        f"🔄 실시간 생성 모드: {mode_text}\n\n"
+        f"{'✅ 새로운 대화를 실시간으로 생성합니다' if current_mode else '📚 저장된 대화에서 선택합니다'}"
+    )
+
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -144,7 +249,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data == "new_quiz":
         # Start a new quiz with a random conversation
         level = user_data_manager.get_user_level(context)
-        new_conversation = data_manager.get_conversation_by_level(level)
+        new_conversation = await data_manager.get_conversation_by_level(level)
         
         if not new_conversation:
             await query.edit_message_text("죄송합니다. 새로운 퀴즈를 찾을 수 없습니다.")

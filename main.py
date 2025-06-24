@@ -10,6 +10,8 @@ from config import config
 from handlers import (
     get_conversation_handler,
     push_command,
+    generate_command,
+    toggle_realtime_command,
     button_callback,
     send_daily_practice,
     send_daily_practice_to_user,
@@ -88,6 +90,8 @@ class JapaneseLearningBot:
         self.application.add_handler(conv_handler)
         
         self.application.add_handler(CommandHandler("push", push_command))
+        self.application.add_handler(CommandHandler("generate", generate_command))
+        self.application.add_handler(CommandHandler("toggle_realtime", toggle_realtime_command))
         
         self.application.add_handler(
             CallbackQueryHandler(button_callback, pattern="^(show_|replay_|save_|quiz_|back_|change_level|new_quiz)")
