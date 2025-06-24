@@ -33,13 +33,13 @@ User translation: {user_translation}
 Correct translation: {correct_translation}
 
 Scoring:
-- Correct meaning, different style: 4-5 stars, feedback "ok"
+- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "괜찮은 표현"
 - Correct but unnatural: 3 stars
 - Partially correct: 1-2 stars
 
 Format:
 Stars: ⭐⭐⭐⭐⭐ (1-5)
-Feedback: Brief words only (e.g. "ok", "unnatural", "incorrect meaning")"""
+Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부자연스러움", "의미 불명확", "잘했어요")"""
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -201,13 +201,13 @@ User translation: {user_translation}
 Correct translation: {correct_translation}
 
 Scoring:
-- Correct meaning, different style: 4-5 stars, feedback "ok"
+- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "괜찮은 표현"
 - Correct but unnatural: 3 stars
 - Partially correct: 1-2 stars
 
 Format:
 Stars: ⭐⭐⭐⭐⭐ (1-5)
-Feedback: Brief words only (e.g. "ok", "unnatural", "incorrect meaning")"""
+Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부자연스러움", "의미 불명확", "잘했어요")"""
         
         headers = {
             "x-api-key": self.api_key,
@@ -376,13 +376,13 @@ User translation: {user_translation}
 Correct translation: {correct_translation}
 
 Scoring:
-- Correct meaning, different style: 4-5 stars, feedback "ok"
+- Correct meaning, different style: 4-5 stars, feedback "좋아요" or "괜찮은 표현"
 - Correct but unnatural: 3 stars
 - Partially correct: 1-2 stars
 
 Format:
 Stars: ⭐⭐⭐⭐⭐ (1-5)
-Feedback: Brief words only (e.g. "ok", "unnatural", "incorrect meaning")"""
+Feedback: Korean short phrase (e.g. "좋아요", "괜찮은 표현", "약간 부자연스러움", "의미 불명확", "잘했어요")"""
         
         try:
             response = await self.model.generate_content_async(prompt)
