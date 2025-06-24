@@ -27,19 +27,19 @@ class OpenAIProvider(LLMProvider):
         self.api_url = "https://api.openai.com/v1/chat/completions"
     
     async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
-        prompt = f"""다음 {source_lang} 번역을 평가해주세요:
-{source_lang}: {source_text}
-사용자 번역: {user_translation}
-정답 번역: {correct_translation}
+        prompt = f"""Evaluate this translation:
+Source ({source_lang}): {source_text}
+User translation: {user_translation}
+Correct translation: {correct_translation}
 
-5점 만점 별점으로 평가하고, 간단한 피드백을 제공해주세요.
-형식:
-별점: ⭐⭐⭐⭐⭐ (1-5개)
-피드백:
-• 좋은 점
-• 개선할 점
-• 핵심 포인트
-(각 항목은 1줄로 간단히)"""
+Scoring:
+- Correct meaning, different style: 4-5 stars, feedback "ok"
+- Correct but unnatural: 3 stars
+- Partially correct: 1-2 stars
+
+Format:
+Stars: ⭐⭐⭐⭐⭐ (1-5)
+Feedback: Brief words only (e.g. "ok", "unnatural", "incorrect meaning")"""
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -195,19 +195,19 @@ class ClaudeProvider(LLMProvider):
         self.api_url = "https://api.anthropic.com/v1/messages"
     
     async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
-        prompt = f"""다음 {source_lang} 번역을 평가해주세요:
-{source_lang}: {source_text}
-사용자 번역: {user_translation}
-정답 번역: {correct_translation}
+        prompt = f"""Evaluate this translation:
+Source ({source_lang}): {source_text}
+User translation: {user_translation}
+Correct translation: {correct_translation}
 
-5점 만점 별점으로 평가하고, 간단한 피드백을 제공해주세요.
-형식:
-별점: ⭐⭐⭐⭐⭐ (1-5개)
-피드백:
-• 좋은 점
-• 개선할 점
-• 핵심 포인트
-(각 항목은 1줄로 간단히)"""
+Scoring:
+- Correct meaning, different style: 4-5 stars, feedback "ok"
+- Correct but unnatural: 3 stars
+- Partially correct: 1-2 stars
+
+Format:
+Stars: ⭐⭐⭐⭐⭐ (1-5)
+Feedback: Brief words only (e.g. "ok", "unnatural", "incorrect meaning")"""
         
         headers = {
             "x-api-key": self.api_key,
@@ -370,19 +370,19 @@ class GeminiProvider(LLMProvider):
         self.model = genai.GenerativeModel('gemini-1.5-flash')
     
     async def evaluate_translation(self, source_text: str, user_translation: str, correct_translation: str, source_lang: str = "일본어") -> str:
-        prompt = f"""다음 {source_lang} 번역을 평가해주세요:
-{source_lang}: {source_text}
-사용자 번역: {user_translation}
-정답 번역: {correct_translation}
+        prompt = f"""Evaluate this translation:
+Source ({source_lang}): {source_text}
+User translation: {user_translation}
+Correct translation: {correct_translation}
 
-5점 만점 별점으로 평가하고, 간단한 피드백을 제공해주세요.
-형식:
-별점: ⭐⭐⭐⭐⭐ (1-5개)
-피드백:
-• 좋은 점
-• 개선할 점
-• 핵심 포인트
-(각 항목은 1줄로 간단히)"""
+Scoring:
+- Correct meaning, different style: 4-5 stars, feedback "ok"
+- Correct but unnatural: 3 stars
+- Partially correct: 1-2 stars
+
+Format:
+Stars: ⭐⭐⭐⭐⭐ (1-5)
+Feedback: Brief words only (e.g. "ok", "unnatural", "incorrect meaning")"""
         
         try:
             response = await self.model.generate_content_async(prompt)
