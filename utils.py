@@ -141,24 +141,45 @@ class WordbookManager:
     
     @staticmethod
     async def save_to_wordbook(user_id: int, conversation: Dict):
-        wordbook = await WordbookManager.load_wordbook(user_id)
-        
-        entry = {
-            "id": conversation["id"],
-            "level": conversation["level"],
-            "jp": conversation["jp"],
-            "kr": conversation["kr"],
-            "saved_at": datetime.now().isoformat()
-        }
-        
-        if not any(item["id"] == conversation["id"] for item in wordbook):
-            wordbook.append(entry)
+        try:
+            print(f"💾 Attempting to save conversation to wordbook for user {user_id}")
+            print(f"💾 Conversation data: {conversation}")
             
+            # Ensure wordbook directory exists
+            os.makedirs(WORDBOOK_DIR, exist_ok=True)
+            
+            wordbook = await WordbookManager.load_wordbook(user_id)
+            print(f"💾 Current wordbook has {len(wordbook)} items")
+            
+            entry = {
+                "id": conversation["id"],
+                "level": conversation["level"],
+                "jp": conversation["jp"],
+                "kr": conversation["kr"],
+                "saved_at": datetime.now().isoformat()
+            }
+            
+            # Check for duplicate based on ID
+            existing_item = any(item["id"] == conversation["id"] for item in wordbook)
+            if existing_item:
+                print(f"💾 Item with ID {conversation['id']} already exists in wordbook")
+                return False
+            
+            # Add new entry
+            wordbook.append(entry)
+            print(f"💾 Added new entry, wordbook now has {len(wordbook)} items")
+            
+            # Save to file
             filepath = os.path.join(WORDBOOK_DIR, f"{user_id}.json")
             async with aiofiles.open(filepath, "w", encoding="utf-8") as f:
                 await f.write(json.dumps(wordbook, ensure_ascii=False, indent=2))
+            
+            print(f"✅ Successfully saved to wordbook: {filepath}")
             return True
-        return False
+            
+        except Exception as e:
+            print(f"❌ Error saving to wordbook for user {user_id}: {type(e).__name__}: {e}")
+            return False
     
     @staticmethod
     async def remove_from_wordbook(user_id: int, conv_id: int) -> bool:
