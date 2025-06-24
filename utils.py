@@ -17,7 +17,7 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 class DataManager:
     def __init__(self):
         self.conversations = self._load_conversations()
-        self.realtime_generation = False  # Temporarily disable to test stored conversations
+        self.realtime_generation = True  # Enable aggressive real-time generation
     
     def _load_conversations(self) -> List[Dict]:
         try:
@@ -32,10 +32,22 @@ class DataManager:
         self.conversations = self._load_conversations()
     
     async def get_conversation_by_level(self, level: str) -> Optional[Dict]:
-        """Hybrid approach: try real-time generation first, fallback to stored"""
+        """Aggressive real-time generation to avoid repetition"""
+        
+        # Check stored conversation count for this level
+        level_conversations = [c for c in self.conversations if c.get("level") == level]
+        stored_count = len(level_conversations)
+        
+        # Aggressive real-time generation logic:
+        # - Always try real-time if < 10 stored conversations for this level
+        # - 80% chance for real-time even with stored conversations (to avoid repetition)
+        should_generate_realtime = (
+            self.realtime_generation and 
+            (stored_count < 10 or random.random() < 0.8)
+        )
         
         # Try real-time generation first
-        if self.realtime_generation:
+        if should_generate_realtime:
             try:
                 from llm import llm_manager
                 
@@ -70,12 +82,11 @@ class DataManager:
             except Exception as e:
                 print(f"⚠️ Real-time generation error: {type(e).__name__}: {e}, falling back to stored")
         
-        # Fallback to stored conversations
-        level_conversations = [c for c in self.conversations if c.get("level") == level]
+        # Fallback to stored conversations (level_conversations already calculated above)
         if level_conversations:
-            conv = random.choice(level_conversations)
+            conv = random.choice(level_conversations).copy()  # Copy to avoid modifying original
             conv["is_realtime"] = False
-            print(f"📚 Using stored conversation ID {conv['id']}")
+            print(f"📚 Using stored conversation ID {conv['id']} (stored_count: {stored_count})")
             return conv
             
         print(f"❌ {level} 레벨에 사용 가능한 대화가 없습니다")
