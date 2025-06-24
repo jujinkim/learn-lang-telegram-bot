@@ -52,23 +52,22 @@ class JapaneseLearningBot:
         pass
     
     async def post_init(self, application: Application):
-        hour, minute = config.daily_time.split(":")
-        
+        # Schedule hourly broadcasts from 9 AM to 11 PM
         trigger = CronTrigger(
-            hour=int(hour),
-            minute=int(minute),
+            hour='9-23',  # 9 AM to 11 PM
+            minute=0,     # At the start of each hour
             timezone=pytz.timezone(config.timezone)
         )
         
         self.scheduler.add_job(
             self.daily_broadcast,
             trigger=trigger,
-            id="daily_broadcast",
+            id="hourly_broadcast",
             replace_existing=True
         )
         
         self.scheduler.start()
-        logger.info(f"Scheduler started. Daily broadcast at {config.daily_time} {config.timezone}")
+        logger.info(f"Scheduler started. Hourly broadcasts from 9 AM to 11 PM {config.timezone}")
     
     def run(self):
         is_valid, error_msg = config.validate()
