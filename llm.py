@@ -10,6 +10,9 @@ class LLMProvider:
     
     async def generate_conversations(self, level: str, theme: str, count: int = 10) -> list:
         raise NotImplementedError
+    
+    async def generate_furigana(self, japanese_text: str) -> str:
+        raise NotImplementedError
 
 class OpenAIProvider(LLMProvider):
     def __init__(self, api_key: str):
@@ -126,6 +129,51 @@ class OpenAIProvider(LLMProvider):
         except Exception as e:
             print(f"OpenAI conversation generation error: {e}")
             return []
+    
+    async def generate_furigana(self, japanese_text: str) -> str:
+        prompt = f"""다음 일본어 문장에 대해 히라가나 읽기(후리가나)를 제공해주세요.
+
+일본어: {japanese_text}
+
+형식: 원래 일본어와 히라가나를 한 줄씩 출력해주세요.
+예시:
+今日は良い天気ですね
+きょうは よい てんき ですね
+
+히라가나만 출력해주세요 (괄호나 다른 표시 없이):"""
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "당신은 일본어 후리가나 생성 전문가입니다. 정확한 히라가나 읽기를 제공합니다."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 300
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.api_url, headers=headers, json=data) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        content = result["choices"][0]["message"]["content"].strip()
+                        # Extract just the hiragana line
+                        lines = content.split('\n')
+                        for line in lines:
+                            if line and not any(char in line for char in '漢字한글abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
+                                return line.strip()
+                        return content
+                    else:
+                        return ""
+        except Exception as e:
+            print(f"OpenAI furigana error: {e}")
+            return ""
 
 class ClaudeProvider(LLMProvider):
     def __init__(self, api_key: str):
@@ -246,6 +294,53 @@ class ClaudeProvider(LLMProvider):
         except Exception as e:
             print(f"Claude conversation generation error: {e}")
             return []
+    
+    async def generate_furigana(self, japanese_text: str) -> str:
+        prompt = f"""다음 일본어 문장에 대해 히라가나 읽기(후리가나)를 제공해주세요.
+
+일본어: {japanese_text}
+
+형식: 원래 일본어와 히라가나를 한 줄씩 출력해주세요.
+예시:
+今日は良い天気ですね
+きょうは よい てんき ですね
+
+히라가나만 출력해주세요 (괄호나 다른 표시 없이):"""
+        
+        headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": "claude-3-haiku-20240307",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": f"당신은 일본어 후리가나 생성 전문가입니다. 정확한 히라가나 읽기를 제공합니다.\n\n{prompt}"
+                }
+            ],
+            "max_tokens": 300
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.api_url, headers=headers, json=data) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        content = result["content"][0]["text"].strip()
+                        # Extract just the hiragana line
+                        lines = content.split('\n')
+                        for line in lines:
+                            if line and not any(char in line for char in '漢字한글abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
+                                return line.strip()
+                        return content
+                    else:
+                        return ""
+        except Exception as e:
+            print(f"Claude furigana error: {e}")
+            return ""
 
 class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str):
@@ -322,6 +417,31 @@ class GeminiProvider(LLMProvider):
         except Exception as e:
             print(f"Gemini conversation generation error: {e}")
             return []
+    
+    async def generate_furigana(self, japanese_text: str) -> str:
+        prompt = f"""다음 일본어 문장에 대해 히라가나 읽기(후리가나)를 제공해주세요.
+
+일본어: {japanese_text}
+
+형식: 원래 일본어와 히라가나를 한 줄씩 출력해주세요.
+예시:
+今日は良い天気ですね
+きょうは よい てんき ですね
+
+히라가나만 출력해주세요 (괄호나 다른 표시 없이):"""
+        
+        try:
+            response = await self.model.generate_content_async(prompt)
+            content = response.text.strip()
+            # Extract just the hiragana line
+            lines = content.split('\n')
+            for line in lines:
+                if line and not any(char in line for char in '漢字한글abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
+                    return line.strip()
+            return content
+        except Exception as e:
+            print(f"Gemini furigana error: {e}")
+            return ""
 
 class LLMManager:
     def __init__(self):
@@ -346,5 +466,10 @@ class LLMManager:
         if self.provider:
             return await self.provider.generate_conversations(level, theme, count)
         return []
+    
+    async def generate_furigana(self, japanese_text: str) -> str:
+        if self.provider:
+            return await self.provider.generate_furigana(japanese_text)
+        return ""
 
 llm_manager = LLMManager()

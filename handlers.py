@@ -75,12 +75,21 @@ async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
     # Generate status indicator
     realtime_indicator = "🔄 실시간 생성" if conversation.get("is_realtime", False) else "📚 저장된 대화"
     
+    # Generate furigana for Japanese text
+    furigana = await llm_manager.generate_furigana(conversation['jp'])
+    
     message_text = (
         f"🌸 오늘의 학습 - 일본어 ({level})\n"
         f"{realtime_indicator}\n\n"
-        f"🇯🇵 {conversation['jp']}\n\n"
-        f"버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
+        f"🇯🇵 {conversation['jp']}\n"
     )
+    
+    if furigana:
+        message_text += f"📝 {furigana}\n\n"
+    else:
+        message_text += "\n"
+    
+    message_text += "버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
     
     await bot.send_message(
         chat_id=user_id,
@@ -107,12 +116,21 @@ async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     # Generate status indicator
     realtime_indicator = "🔄 실시간 생성" if conversation.get("is_realtime", False) else "📚 저장된 대화"
     
+    # Generate furigana for Japanese text
+    furigana = await llm_manager.generate_furigana(conversation['jp'])
+    
     message_text = (
         f"🌸 오늘의 학습 - 일본어 ({level})\n"
         f"{realtime_indicator}\n\n"
-        f"🇯🇵 {conversation['jp']}\n\n"
-        f"버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
+        f"🇯🇵 {conversation['jp']}\n"
     )
+    
+    if furigana:
+        message_text += f"📝 {furigana}\n\n"
+    else:
+        message_text += "\n"
+    
+    message_text += "버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
     
     await context.bot.send_message(
         chat_id=user_id,
@@ -304,8 +322,15 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup = InlineKeyboardMarkup(keyboard)
             
         if lang == "jp":
+            # Generate furigana for Japanese text
+            furigana = await llm_manager.generate_furigana(conversation['jp'])
+            
+            jp_text = f"🇯🇵 일본어: {conversation['jp']}"
+            if furigana:
+                jp_text += f"\n📝 읽기: {furigana}"
+            
             await query.edit_message_text(
-                text=f"🇯🇵 일본어: {conversation['jp']}",
+                text=jp_text,
                 reply_markup=reply_markup
             )
         elif lang == "kr":
