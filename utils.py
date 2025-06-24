@@ -17,7 +17,7 @@ os.makedirs(AUDIO_DIR, exist_ok=True)
 class DataManager:
     def __init__(self):
         self.conversations = self._load_conversations()
-        self.realtime_generation = True  # Enable hybrid mode
+        self.realtime_generation = False  # Temporarily disable to test stored conversations
     
     def _load_conversations(self) -> List[Dict]:
         try:
@@ -39,31 +39,36 @@ class DataManager:
             try:
                 from llm import llm_manager
                 
-                # Generate a single fresh conversation
-                themes = ["daily_life", "restaurant", "business", "travel", "shopping", "emergency", "education", "work"]
-                theme = random.choice(themes)
-                
-                print(f"🔄 Generating real-time conversation: {level} {theme}")
-                conversations = await llm_manager.generate_conversations(level, theme, 1)
-                
-                if conversations and len(conversations) > 0:
-                    conv = conversations[0]
-                    # Add temporary ID and level
-                    conv["id"] = random.randint(100000, 999999)  # Temp ID for real-time
-                    conv["level"] = level
-                    conv["is_realtime"] = True
-                    
-                    print(f"✅ Real-time generation successful")
-                    
-                    # Optionally save to database for future use
-                    await self._save_generated_conversation(conv)
-                    
-                    return conv
+                # Check if LLM manager is properly configured
+                if not llm_manager.provider:
+                    print(f"⚠️ LLM provider not configured, falling back to stored conversations")
+                    self.realtime_generation = False  # Disable to avoid repeated failures
                 else:
-                    print(f"❌ Real-time generation failed, falling back to stored")
+                    # Generate a single fresh conversation
+                    themes = ["daily_life", "restaurant", "business", "travel", "shopping", "emergency", "education", "work"]
+                    theme = random.choice(themes)
+                    
+                    print(f"🔄 Generating real-time conversation: {level} {theme}")
+                    conversations = await llm_manager.generate_conversations(level, theme, 1)
+                    
+                    if conversations and len(conversations) > 0:
+                        conv = conversations[0]
+                        # Add temporary ID and level
+                        conv["id"] = random.randint(100000, 999999)  # Temp ID for real-time
+                        conv["level"] = level
+                        conv["is_realtime"] = True
+                        
+                        print(f"✅ Real-time generation successful")
+                        
+                        # Optionally save to database for future use
+                        await self._save_generated_conversation(conv)
+                        
+                        return conv
+                    else:
+                        print(f"❌ Real-time generation failed: empty response, falling back to stored")
                     
             except Exception as e:
-                print(f"⚠️ Real-time generation error: {e}, falling back to stored")
+                print(f"⚠️ Real-time generation error: {type(e).__name__}: {e}, falling back to stored")
         
         # Fallback to stored conversations
         level_conversations = [c for c in self.conversations if c.get("level") == level]
