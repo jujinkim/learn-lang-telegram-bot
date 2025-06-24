@@ -372,7 +372,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             conversation = data_manager.get_conversation_by_id(conv_id)
         
         if not conversation:
-            await query.edit_message_text("문장을 찾을 수 없습니다.")
+            await query.edit_message_text("죄송합니다. 해당 문장을 찾을 수 없습니다.")
             return
         
         # Create keyboard with back button
