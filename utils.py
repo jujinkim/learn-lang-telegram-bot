@@ -188,7 +188,9 @@ class UserDataManager:
     
     @staticmethod
     def set_quiz_data(context, conversation: Dict):
-        context.user_data["quiz_data"] = conversation
+        quiz_data = conversation.copy()
+        quiz_data["quiz_start_time"] = datetime.now().isoformat()
+        context.user_data["quiz_data"] = quiz_data
     
     @staticmethod
     def clear_quiz_data(context):
@@ -201,7 +203,8 @@ class UserDataManager:
     
     @staticmethod
     def set_daily_conversation(context, conversation: Dict):
-        context.user_data["daily_conversation"] = conversation
+        if context is not None:
+            context.user_data["daily_conversation"] = conversation
 
 data_manager = DataManager()
 wordbook_manager = WordbookManager()

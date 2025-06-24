@@ -25,9 +25,14 @@ class OpenAIProvider(LLMProvider):
 사용자 번역: {user_translation}
 정답 번역: {correct_translation}
 
-0-100점으로 점수를 매기고, 한국어로 짧은 피드백을 제공해주세요.
-형식: 점수: X점
-피드백: (피드백 내용)"""
+5점 만점 별점으로 평가하고, 간단한 피드백을 제공해주세요.
+형식:
+별점: ⭐⭐⭐⭐⭐ (1-5개)
+피드백:
+• 좋은 점
+• 개선할 점
+• 핵심 포인트
+(각 항목은 1줄로 간단히)"""
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -41,7 +46,7 @@ class OpenAIProvider(LLMProvider):
                 {"role": "user", "content": prompt}
             ],
             "temperature": 0.7,
-            "max_tokens": 200
+            "max_tokens": 150
         }
         
         try:
@@ -135,12 +140,12 @@ class OpenAIProvider(LLMProvider):
 
 일본어: {japanese_text}
 
-형식: 원래 일본어와 히라가나를 한 줄씩 출력해주세요.
+형식: 히라가나 읽기만 한 줄로 출력해주세요.
 예시:
-今日は良い天気ですね
-きょうは よい てんき ですね
+입력: 今日は良い天気ですね
+출력: きょうは よい てんき ですね
 
-히라가나만 출력해주세요 (괄호나 다른 표시 없이):"""
+히라가나 읽기:"""
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -186,9 +191,14 @@ class ClaudeProvider(LLMProvider):
 사용자 번역: {user_translation}
 정답 번역: {correct_translation}
 
-0-100점으로 점수를 매기고, 한국어로 짧은 피드백을 제공해주세요.
-형식: 점수: X점
-피드백: (피드백 내용)"""
+5점 만점 별점으로 평가하고, 간단한 피드백을 제공해주세요.
+형식:
+별점: ⭐⭐⭐⭐⭐ (1-5개)
+피드백:
+• 좋은 점
+• 개선할 점
+• 핵심 포인트
+(각 항목은 1줄로 간단히)"""
         
         headers = {
             "x-api-key": self.api_key,
@@ -204,7 +214,7 @@ class ClaudeProvider(LLMProvider):
                     "content": prompt
                 }
             ],
-            "max_tokens": 200
+            "max_tokens": 150
         }
         
         try:
@@ -300,12 +310,12 @@ class ClaudeProvider(LLMProvider):
 
 일본어: {japanese_text}
 
-형식: 원래 일본어와 히라가나를 한 줄씩 출력해주세요.
+형식: 히라가나 읽기만 한 줄로 출력해주세요.
 예시:
-今日は良い天気ですね
-きょうは よい てんき ですね
+입력: 今日は良い天気ですね
+출력: きょうは よい てんき ですね
 
-히라가나만 출력해주세요 (괄호나 다른 표시 없이):"""
+히라가나 읽기:"""
         
         headers = {
             "x-api-key": self.api_key,
@@ -354,9 +364,14 @@ class GeminiProvider(LLMProvider):
 사용자 번역: {user_translation}
 정답 번역: {correct_translation}
 
-0-100점으로 점수를 매기고, 한국어로 짧은 피드백을 제공해주세요.
-형식: 점수: X점
-피드백: (피드백 내용)"""
+5점 만점 별점으로 평가하고, 간단한 피드백을 제공해주세요.
+형식:
+별점: ⭐⭐⭐⭐⭐ (1-5개)
+피드백:
+• 좋은 점
+• 개선할 점
+• 핵심 포인트
+(각 항목은 1줄로 간단히)"""
         
         try:
             response = await self.model.generate_content_async(prompt)
@@ -423,12 +438,12 @@ class GeminiProvider(LLMProvider):
 
 일본어: {japanese_text}
 
-형식: 원래 일본어와 히라가나를 한 줄씩 출력해주세요.
+형식: 히라가나 읽기만 한 줄로 출력해주세요.
 예시:
-今日は良い天気ですね
-きょうは よい てんき ですね
+입력: 今日は良い天気ですね
+출력: きょうは よい てんき ですね
 
-히라가나만 출력해주세요 (괄호나 다른 표시 없이):"""
+히라가나 읽기:"""
         
         try:
             response = await self.model.generate_content_async(prompt)

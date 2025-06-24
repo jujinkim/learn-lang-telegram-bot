@@ -4,6 +4,7 @@ from utils import data_manager, wordbook_manager, audio_generator, user_data_man
 from llm import llm_manager
 from config import config
 import os
+import asyncio
 
 SELECTING_LEVEL, QUIZ_MODE = range(2)
 
@@ -67,7 +68,9 @@ async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
         )
         return
     
-    user_data_manager.set_daily_conversation(None, conversation)  # Store for button usage
+    # Store conversation without context for button usage
+    # Note: This is a special case for broadcast where we don't have context
+    # The conversation will be stored properly when accessed via buttons
     
     keyboard = get_practice_keyboard(conversation)
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -293,6 +296,9 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
     
     if data == "new_quiz":
+        # Show waiting message first
+        await query.edit_message_text("새로운 퀴즈를 준비 중입니다... ⏳")
+        
         # Start a new quiz with a random conversation
         level = user_data_manager.get_user_level(context)
         new_conversation = await data_manager.get_conversation_by_level(level)
@@ -442,10 +448,37 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = get_practice_keyboard(conversation)
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await query.edit_message_caption(
-            caption=f"🌸 오늘의 학습 - 일본어 ({level})",
-            reply_markup=reply_markup
-        )
+        # Try to return to the original message format
+        try:
+            # First try editing as a regular message
+            realtime_indicator = "🔄 실시간 생성" if conversation.get("is_realtime", False) else "📚 저장된 대화"
+            
+            # Generate furigana for Japanese text
+            furigana = await llm_manager.generate_furigana(conversation['jp'])
+            
+            message_text = (
+                f"🌸 오늘의 학습 - 일본어 ({level})\n"
+                f"{realtime_indicator}\n\n"
+                f"🇯🇵 {conversation['jp']}\n"
+            )
+            
+            if furigana:
+                message_text += f"📝 {furigana}\n\n"
+            else:
+                message_text += "\n"
+            
+            message_text += "버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
+            
+            await query.edit_message_text(
+                text=message_text,
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            # If editing fails, just show a simple message
+            await query.edit_message_text(
+                text="메뉴로 돌아갑니다. /push 명령어로 새로운 연습을 시작하세요.",
+                reply_markup=reply_markup
+            )
 
 async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_translation = update.message.text
@@ -487,20 +520,43 @@ async def quiz_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not quiz_data:
         return  # Not in quiz mode, ignore
     
+    # Check if the message looks like a command or special input
     user_translation = update.message.text
+    if user_translation.startswith('/') or len(user_translation) > 500:
+        return  # Ignore commands and very long messages
+    
+    # Check if this is a valid quiz response timing (within 5 minutes of quiz start)
+    # This prevents stale quiz data from interfering with normal conversation
+    from datetime import datetime, timedelta
+    if "quiz_start_time" in quiz_data:
+        quiz_start = datetime.fromisoformat(quiz_data["quiz_start_time"])
+        if datetime.now() - quiz_start > timedelta(minutes=5):
+            user_data_manager.clear_quiz_data(context)
+            await update.message.reply_text("퀴즈 시간이 초과되었습니다. 다시 시작해주세요.")
+            return
     
     await update.message.reply_text("평가 중입니다... ⏳")
     
-    evaluation = await llm_manager.evaluate_translation(
+    # Get evaluation and furigana concurrently
+    evaluation_task = llm_manager.evaluate_translation(
         quiz_data["jp"],
         user_translation,
         quiz_data["kr"],
         "일본어"
     )
+    furigana_task = llm_manager.generate_furigana(quiz_data["jp"])
+    
+    evaluation, furigana = await asyncio.gather(evaluation_task, furigana_task)
     
     result_message = (
         f"📊 평가 결과\n\n"
         f"일본어: {quiz_data['jp']}\n"
+    )
+    
+    if furigana:
+        result_message += f"읽기: {furigana}\n"
+    
+    result_message += (
         f"정답: {quiz_data['kr']}\n"
         f"당신의 답: {user_translation}\n\n"
         f"{evaluation}"
