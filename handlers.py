@@ -30,7 +30,7 @@ def get_practice_keyboard(conversation, language_direction="jp_to_kr"):
         return [
             [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
             [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
-            [InlineKeyboardButton("🔊 일본어 듣기", callback_data=f"listen_{conversation['id']}")],
+            [InlineKeyboardButton("🔊 일본어 듣기", callback_data=f"listen_jp_{conversation['id']}")],
             [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
             [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
             [InlineKeyboardButton("🔄 한국어→일본어", callback_data="toggle_direction"), InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
