@@ -148,7 +148,16 @@ async def push_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("권한이 없습니다.")
         return
     
-    await send_daily_practice(context, user_id)
+    # Send loading message
+    loading_msg = await update.message.reply_text("🔄 학습 문장을 준비하고 있습니다...")
+    
+    try:
+        await send_daily_practice(context, user_id)
+        # Delete loading message after successful send
+        await loading_msg.delete()
+    except Exception as e:
+        await loading_msg.edit_text(f"❌ 오류가 발생했습니다: {str(e)}")
+        raise
 
 async def generate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Admin command to generate new conversations"""
@@ -371,6 +380,11 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Fall back to stored conversations
             conversation = data_manager.get_conversation_by_id(conv_id)
         
+        # If conversation not found but we have a daily conversation, use that as fallback
+        if not conversation and daily_conversation:
+            print(f"⚠️ Conversation ID {conv_id} not found, using daily conversation as fallback")
+            conversation = daily_conversation
+        
         if not conversation:
             await query.edit_message_text("죄송합니다. 해당 문장을 찾을 수 없습니다.")
             return
@@ -409,6 +423,11 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         # Fall back to stored conversations
         conversation = data_manager.get_conversation_by_id(conv_id)
+    
+    # If conversation not found but we have a daily conversation, use that as fallback
+    if not conversation and daily_conversation:
+        print(f"⚠️ Conversation ID {conv_id} not found, using daily conversation as fallback")
+        conversation = daily_conversation
     
     if not conversation:
         await query.edit_message_text("문장을 찾을 수 없습니다.")

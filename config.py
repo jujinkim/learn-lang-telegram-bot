@@ -8,7 +8,7 @@ load_dotenv()
 class Config:
     def __init__(self):
         self.bot_token: str = ""
-        self.llm_provider: str = "openai"
+        self.llm_provider: str = "gemini"
         self.llm_api_key: str = ""
         self.admin_ids: list[int] = []
         self.timezone: str = "Asia/Seoul"
@@ -23,14 +23,14 @@ class Config:
             with open(config_file, "r", encoding="utf-8") as f:
                 config_data = json.load(f)
                 self.bot_token = config_data.get("BOT_TOKEN", os.getenv("BOT_TOKEN", ""))
-                self.llm_provider = config_data.get("LLM_PROVIDER", os.getenv("LLM_PROVIDER", "openai"))
+                self.llm_provider = config_data.get("LLM_PROVIDER", os.getenv("LLM_PROVIDER", "gemini"))
                 self.llm_api_key = config_data.get("LLM_API_KEY", os.getenv("LLM_API_KEY", ""))
                 self.admin_ids = config_data.get("ADMIN_IDS", [])
                 self.timezone = config_data.get("TIMEZONE", "Asia/Seoul")
                 self.daily_time = config_data.get("DAILY_TIME", "09:00")
         else:
             self.bot_token = os.getenv("BOT_TOKEN", "")
-            self.llm_provider = os.getenv("LLM_PROVIDER", "openai")
+            self.llm_provider = os.getenv("LLM_PROVIDER", "gemini")
             self.llm_api_key = os.getenv("LLM_API_KEY", "")
             admin_ids_str = os.getenv("ADMIN_IDS", "")
             self.admin_ids = [int(id.strip()) for id in admin_ids_str.split(",") if id.strip()]

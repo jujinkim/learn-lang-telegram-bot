@@ -225,7 +225,7 @@ Feedback: 1-2 Korean words only (e.g. "좋아요", "맞아요", "어색함", "�
         }
         
         data = {
-            "model": "claude-3-haiku-20240307",
+            "model": "claude-3-5-haiku-20241022",
             "messages": [
                 {
                     "role": "user",
@@ -290,7 +290,7 @@ Feedback: 1-2 Korean words only (e.g. "좋아요", "맞아요", "어색함", "�
         }
         
         data = {
-            "model": "claude-3-haiku-20240307",
+            "model": "claude-3-5-haiku-20241022",
             "messages": [
                 {
                     "role": "user",
@@ -351,7 +351,7 @@ Hiragana reading:"""
         }
         
         data = {
-            "model": "claude-3-haiku-20240307",
+            "model": "claude-3-5-haiku-20241022",
             "messages": [
                 {
                     "role": "user",
