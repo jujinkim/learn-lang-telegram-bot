@@ -8,16 +8,33 @@ import asyncio
 
 SELECTING_LEVEL, QUIZ_MODE = range(2)
 
-def get_practice_keyboard(conversation):
+def get_question_and_answer(conversation: dict, language_direction: str) -> tuple:
+    """Get question and answer based on language direction"""
+    if language_direction == "kr_to_jp":
+        return conversation["kr"], conversation["jp"], "한국어", "일본어"
+    else:  # jp_to_kr (default)
+        return conversation["jp"], conversation["kr"], "일본어", "한국어"
+
+def get_practice_keyboard(conversation, language_direction="jp_to_kr"):
     """Generate the standard practice keyboard layout"""
-    return [
-        [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
-        [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
-        [InlineKeyboardButton("🔊 일본어 듣기", callback_data=f"listen_{conversation['id']}")],
-        [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
-        [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
-        [InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
-    ]
+    if language_direction == "kr_to_jp":
+        return [
+            [InlineKeyboardButton("🇰🇷 한국어 보기", callback_data=f"show_kr_{conversation['id']}")],
+            [InlineKeyboardButton("🇯🇵 일본어 뜻 보기", callback_data=f"show_jp_{conversation['id']}")],
+            [InlineKeyboardButton("🔊 한국어 듣기", callback_data=f"listen_kr_{conversation['id']}")],
+            [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
+            [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
+            [InlineKeyboardButton("🔄 일본어→한국어", callback_data="toggle_direction"), InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
+        ]
+    else:  # jp_to_kr (default)
+        return [
+            [InlineKeyboardButton("🇯🇵 일본어 보기", callback_data=f"show_jp_{conversation['id']}")],
+            [InlineKeyboardButton("🇰🇷 한국어 뜻 보기", callback_data=f"show_kr_{conversation['id']}")],
+            [InlineKeyboardButton("🔊 일본어 듣기", callback_data=f"listen_{conversation['id']}")],
+            [InlineKeyboardButton("📝 단어장에 저장", callback_data=f"save_{conversation['id']}")],
+            [InlineKeyboardButton("🎯 퀴즈 모드", callback_data=f"quiz_{conversation['id']}")],
+            [InlineKeyboardButton("🔄 한국어→일본어", callback_data="toggle_direction"), InlineKeyboardButton("⚙️ 레벨 변경", callback_data="change_level")]
+        ]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -102,6 +119,7 @@ async def send_daily_practice_to_user(bot, user_id: int, level: str = "N3"):
 
 async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     level = user_data_manager.get_user_level(context)
+    language_direction = user_data_manager.get_language_direction(context)
     conversation = await data_manager.get_conversation_by_level(level)
     
     if not conversation:
@@ -113,27 +131,34 @@ async def send_daily_practice(context: ContextTypes.DEFAULT_TYPE, user_id: int):
     
     user_data_manager.set_daily_conversation(context, conversation)
     
-    keyboard = get_practice_keyboard(conversation)
+    keyboard = get_practice_keyboard(conversation, language_direction)
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     # Generate status indicator
     realtime_indicator = "🔄 실시간 생성" if conversation.get("is_realtime", False) else "📚 저장된 대화"
     
-    # Generate furigana for Japanese text
+    # Get question and answer based on direction
+    question, answer, question_lang, answer_lang = get_question_and_answer(conversation, language_direction)
+    
+    # Generate furigana for Japanese text (regardless of direction)
     furigana = await llm_manager.generate_furigana(conversation['jp'])
     
+    # Direction indicator
+    direction_indicator = "🇰🇷→🇯🇵" if language_direction == "kr_to_jp" else "🇯🇵→🇰🇷"
+    
     message_text = (
-        f"🌸 오늘의 학습 - 일본어 ({level})\n"
+        f"🌸 오늘의 학습 {direction_indicator} ({level})\n"
         f"{realtime_indicator}\n\n"
-        f"🇯🇵 {conversation['jp']}\n"
+        f"📖 {question}\n"
     )
     
-    if furigana:
+    # Add furigana if question is Japanese
+    if language_direction == "jp_to_kr" and furigana:
         message_text += f"📝 {furigana}\n\n"
     else:
         message_text += "\n"
     
-    message_text += "버튼을 눌러 한국어 뜻을 보거나 음성을 들어보세요!"
+    message_text += f"버튼을 눌러 {answer_lang} 뜻을 보거나 음성을 들어보세요!"
     
     await context.bot.send_message(
         chat_id=user_id,
@@ -330,11 +355,20 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         quiz_keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data="back_to_menu")]]
         quiz_markup = InlineKeyboardMarkup(quiz_keyboard)
         
+        # Get language direction and create appropriate quiz text
+        language_direction = user_data_manager.get_language_direction(context)
+        question, answer, question_lang, answer_lang = get_question_and_answer(new_conversation, language_direction)
+        
+        direction_indicator = "🇰🇷→🇯🇵" if language_direction == "kr_to_jp" else "🇯🇵→🇰🇷"
+        question_flag = "🇰🇷" if language_direction == "kr_to_jp" else "🇯🇵"
+        
+        quiz_text = f"🎯 퀴즈 모드 {direction_indicator}\n\n다음 {question_lang}를 {answer_lang}로 번역해주세요:\n\n{question_flag} {question}\n\n번역을 입력해주세요:"
+        
         # Replace waiting message with quiz
         await context.bot.edit_message_text(
             chat_id=query.message.chat_id,
             message_id=waiting_msg.message_id,
-            text=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {new_conversation['jp']}\n\n번역을 입력해주세요:",
+            text=quiz_text,
             reply_markup=quiz_markup
         )
         return
@@ -363,6 +397,47 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await send_daily_practice(context, query.from_user.id)
         else:
             await query.edit_message_text("메뉴로 돌아갑니다. /push 명령어로 새로운 연습을 시작하세요.")
+        return
+    
+    if data == "toggle_direction":
+        current_direction = user_data_manager.get_language_direction(context)
+        new_direction = "kr_to_jp" if current_direction == "jp_to_kr" else "jp_to_kr"
+        user_data_manager.set_language_direction(context, new_direction)
+        
+        # Refresh the daily practice with new direction
+        await send_daily_practice(context, query.from_user.id)
+        return
+    
+    if data == "show_stats":
+        performance = user_data_manager.get_performance_stats(context)
+        level = user_data_manager.get_user_level(context)
+        direction = user_data_manager.get_language_direction(context)
+        
+        accuracy = (performance["correct_answers"] / performance["total_quizzes"] * 100) if performance["total_quizzes"] > 0 else 0
+        
+        direction_text = "🇰🇷→🇯🇵" if direction == "kr_to_jp" else "🇯🇵→🇰🇷"
+        
+        stats_message = (
+            f"📊 학습 통계\n\n"
+            f"현재 레벨: {level}\n"
+            f"학습 방향: {direction_text}\n"
+            f"총 퀴즈: {performance['total_quizzes']}개\n"
+            f"정답률: {accuracy:.1f}%\n"
+        )
+        
+        if performance["recent_scores"]:
+            recent_avg = sum(performance["recent_scores"]) / len(performance["recent_scores"])
+            stats_message += f"최근 평균: {recent_avg:.1f}⭐\n"
+        
+        if performance["level_history"]:
+            stats_message += f"\n📈 레벨 변경 기록:\n"
+            for change in performance["level_history"][-3:]:  # Show last 3 changes
+                stats_message += f"• {change['from']} → {change['to']} ({change['reason']})\n"
+        
+        keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data="back_to_menu")]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(stats_message, reply_markup=reply_markup)
         return
     
     parts = data.split("_")
@@ -478,8 +553,17 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         quiz_keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data=f"back_{conversation['id']}")]]
         quiz_markup = InlineKeyboardMarkup(quiz_keyboard)
         
+        # Get language direction and create appropriate quiz text
+        language_direction = user_data_manager.get_language_direction(context)
+        question, answer, question_lang, answer_lang = get_question_and_answer(conversation, language_direction)
+        
+        direction_indicator = "🇰🇷→🇯🇵" if language_direction == "kr_to_jp" else "🇯🇵→🇰🇷"
+        question_flag = "🇰🇷" if language_direction == "kr_to_jp" else "🇯🇵"
+        
+        quiz_text = f"🎯 퀴즈 모드 {direction_indicator}\n\n다음 {question_lang}를 {answer_lang}로 번역해주세요:\n\n{question_flag} {question}\n\n번역을 입력해주세요:"
+        
         await query.edit_message_text(
-            text=f"🎯 퀴즈 모드\n\n다음 일본어를 한국어로 번역해주세요:\n\n🇯🇵 {conversation['jp']}\n\n번역을 입력해주세요:",
+            text=quiz_text,
             reply_markup=quiz_markup
         )
         # Don't return QUIZ_MODE here since this is not part of ConversationHandler
@@ -530,24 +614,72 @@ async def quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("퀴즈 데이터를 찾을 수 없습니다. 다시 시작해주세요.")
         return ConversationHandler.END
     
+    # Calculate response time
+    from datetime import datetime
+    quiz_start = datetime.fromisoformat(quiz_data["quiz_start_time"])
+    response_time = (datetime.now() - quiz_start).total_seconds()
+    
     await update.message.reply_text("평가 중입니다... ⏳")
     
-    evaluation = await llm_manager.evaluate_translation(
-        quiz_data["jp"],
-        user_translation,
-        quiz_data["kr"],
-        "일본어"
-    )
+    # Get language direction for proper evaluation
+    language_direction = user_data_manager.get_language_direction(context)
+    
+    if language_direction == "kr_to_jp":
+        # Korean to Japanese translation
+        evaluation = await llm_manager.evaluate_translation(
+            quiz_data["kr"],
+            user_translation,
+            quiz_data["jp"],
+            "한국어"
+        )
+        source_text = quiz_data["kr"]
+        correct_answer = quiz_data["jp"]
+        source_lang = "한국어"
+        target_lang = "일본어"
+    else:
+        # Japanese to Korean translation (default)
+        evaluation = await llm_manager.evaluate_translation(
+            quiz_data["jp"],
+            user_translation,
+            quiz_data["kr"],
+            "일본어"
+        )
+        source_text = quiz_data["jp"]
+        correct_answer = quiz_data["kr"]
+        source_lang = "일본어"
+        target_lang = "한국어"
+    
+    # Extract star rating from evaluation for performance tracking
+    stars = 3  # Default
+    if "⭐" in evaluation:
+        stars = evaluation.count("⭐")
+    
+    # Record performance for difficulty adaptation
+    current_level = user_data_manager.get_user_level(context)
+    level_change = user_data_manager.record_quiz_result(context, stars, response_time, current_level)
     
     result_message = (
         f"📊 평가 결과\n\n"
-        f"일본어: {quiz_data['jp']}\n"
-        f"정답: {quiz_data['kr']}\n"
+        f"{source_lang}: {source_text}\n"
+        f"정답: {correct_answer}\n"
         f"당신의 답: {user_translation}\n\n"
-        f"{evaluation}"
+        f"{evaluation}\n"
+        f"⏱️ 응답 시간: {response_time:.1f}초"
     )
     
-    keyboard = [[InlineKeyboardButton("🔙 돌아가기", callback_data="back_to_menu")]]
+    # Add level change notification if applicable
+    if level_change:
+        result_message += (
+            f"\n\n🎯 레벨 조정!\n"
+            f"{level_change['old_level']} → {level_change['new_level']}\n"
+            f"사유: {level_change['reason']}"
+        )
+    
+    keyboard = [
+        [InlineKeyboardButton("🎯 다른 퀴즈", callback_data="new_quiz")],
+        [InlineKeyboardButton("📊 성과 보기", callback_data="show_stats")],
+        [InlineKeyboardButton("🔙 돌아가기", callback_data="back_to_menu")]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     await update.message.reply_text(result_message, reply_markup=reply_markup)

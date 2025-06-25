@@ -220,6 +220,103 @@ class UserDataManager:
         context.user_data["level"] = level
     
     @staticmethod
+    def get_language_direction(context) -> str:
+        """Get study direction: 'jp_to_kr' or 'kr_to_jp'"""
+        return context.user_data.get("language_direction", "jp_to_kr")
+    
+    @staticmethod
+    def set_language_direction(context, direction: str):
+        """Set study direction: 'jp_to_kr' or 'kr_to_jp'"""
+        context.user_data["language_direction"] = direction
+    
+    @staticmethod
+    def get_performance_stats(context) -> Dict:
+        """Get user performance statistics"""
+        return context.user_data.get("performance", {
+            "total_quizzes": 0,
+            "correct_answers": 0,
+            "recent_scores": [],  # Last 10 quiz scores (0-5 stars)
+            "level_history": [],  # Level change history
+            "last_level_check": None
+        })
+    
+    @staticmethod
+    def record_quiz_result(context, stars: int, response_time_seconds: float, level: str):
+        """Record quiz performance for difficulty adaptation"""
+        performance = UserDataManager.get_performance_stats(context)
+        
+        # Update counters
+        performance["total_quizzes"] += 1
+        if stars >= 4:  # 4-5 stars considered correct
+            performance["correct_answers"] += 1
+        
+        # Track recent scores (last 10)
+        performance["recent_scores"].append(stars)
+        if len(performance["recent_scores"]) > 10:
+            performance["recent_scores"].pop(0)
+        
+        # Save back to context
+        context.user_data["performance"] = performance
+        
+        # Check if level adjustment is needed
+        UserDataManager._check_level_adjustment(context, level)
+    
+    @staticmethod
+    def _check_level_adjustment(context, current_level: str):
+        """Check if user level should be adjusted based on performance"""
+        performance = UserDataManager.get_performance_stats(context)
+        recent_scores = performance["recent_scores"]
+        
+        # Need at least 5 recent quizzes to adjust
+        if len(recent_scores) < 5:
+            return None
+        
+        # Calculate average of recent scores
+        avg_score = sum(recent_scores) / len(recent_scores)
+        
+        levels = ["N5", "N4", "N3", "N2", "N1"]
+        current_idx = levels.index(current_level) if current_level in levels else 2
+        
+        new_level = None
+        adjustment_reason = ""
+        
+        # Level up if consistently scoring high (avg >= 4.5)
+        if avg_score >= 4.5 and current_idx < len(levels) - 1:
+            new_level = levels[current_idx + 1]
+            adjustment_reason = f"높은 성취도 (평균 {avg_score:.1f}점)"
+        
+        # Level down if consistently scoring low (avg <= 2.0)
+        elif avg_score <= 2.0 and current_idx > 0:
+            new_level = levels[current_idx - 1]
+            adjustment_reason = f"난이도 조정 필요 (평균 {avg_score:.1f}점)"
+        
+        if new_level and new_level != current_level:
+            # Record level change
+            performance["level_history"].append({
+                "from": current_level,
+                "to": new_level,
+                "reason": adjustment_reason,
+                "timestamp": datetime.now().isoformat(),
+                "avg_score": avg_score
+            })
+            
+            # Reset recent scores after level change
+            performance["recent_scores"] = []
+            performance["last_level_check"] = datetime.now().isoformat()
+            
+            context.user_data["performance"] = performance
+            UserDataManager.set_user_level(context, new_level)
+            
+            return {
+                "new_level": new_level,
+                "old_level": current_level,
+                "reason": adjustment_reason,
+                "avg_score": avg_score
+            }
+        
+        return None
+    
+    @staticmethod
     def get_quiz_data(context) -> Optional[Dict]:
         return context.user_data.get("quiz_data")
     
