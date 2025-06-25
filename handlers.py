@@ -515,29 +515,58 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text="preparing audio... ⏳"
         )
         
-        # Generate audio on-demand
-        audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"])
-        if audio_file and os.path.exists(audio_file):
-            # Delete the preparing message
-            await context.bot.delete_message(
-                chat_id=query.from_user.id,
-                message_id=preparing_msg.message_id
-            )
-            
-            with open(audio_file, 'rb') as audio:
-                caption = "🔊 일본어 듣기" if action == "listen" else "🔁 다시 듣기"
-                await context.bot.send_audio(
+        # Determine which language to use for audio
+        lang = parts[1] if len(parts) > 1 and parts[1] in ["kr", "jp"] else "jp"
+        
+        # Generate audio based on language
+        if lang == "kr":
+            # Generate Korean audio
+            audio_file = await audio_generator.generate_audio(conversation["kr"], conversation["id"], lang="kr")
+            if audio_file and os.path.exists(audio_file):
+                # Delete the preparing message
+                await context.bot.delete_message(
                     chat_id=query.from_user.id,
-                    audio=audio,
-                    caption=caption
+                    message_id=preparing_msg.message_id
+                )
+                
+                with open(audio_file, 'rb') as audio:
+                    caption = "🔊 한국어 듣기" if action == "listen" else "🔁 다시 듣기"
+                    await context.bot.send_audio(
+                        chat_id=query.from_user.id,
+                        audio=audio,
+                        caption=caption
+                    )
+            else:
+                # Edit the preparing message to show error
+                await context.bot.edit_message_text(
+                    chat_id=query.from_user.id,
+                    message_id=preparing_msg.message_id,
+                    text="⚠️ 음성 파일 생성 중 오류가 발생했습니다."
                 )
         else:
-            # Edit the preparing message to show error
-            await context.bot.edit_message_text(
-                chat_id=query.from_user.id,
-                message_id=preparing_msg.message_id,
-                text="⚠️ 음성 파일 생성 중 오류가 발생했습니다."
-            )
+            # Generate Japanese audio
+            audio_file = await audio_generator.generate_audio(conversation["jp"], conversation["id"], lang="ja")
+            if audio_file and os.path.exists(audio_file):
+                # Delete the preparing message
+                await context.bot.delete_message(
+                    chat_id=query.from_user.id,
+                    message_id=preparing_msg.message_id
+                )
+                
+                with open(audio_file, 'rb') as audio:
+                    caption = "🔊 일본어 듣기" if action == "listen" else "🔁 다시 듣기"
+                    await context.bot.send_audio(
+                        chat_id=query.from_user.id,
+                        audio=audio,
+                        caption=caption
+                    )
+            else:
+                # Edit the preparing message to show error
+                await context.bot.edit_message_text(
+                    chat_id=query.from_user.id,
+                    message_id=preparing_msg.message_id,
+                    text="⚠️ 음성 파일 생성 중 오류가 발생했습니다."
+                )
     
     elif action == "save":
         saved = await wordbook_manager.save_to_wordbook(query.from_user.id, conversation)

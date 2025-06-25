@@ -196,14 +196,18 @@ class WordbookManager:
 
 class AudioGenerator:
     @staticmethod
-    async def generate_audio(text: str, conv_id: int) -> str:
-        audio_file = os.path.join(AUDIO_DIR, f"conv_{conv_id}.mp3")
+    async def generate_audio(text: str, conv_id: int, lang: str = 'ja') -> str:
+        # Create language-specific filename
+        lang_suffix = f"_{lang}" if lang != 'ja' else ""
+        audio_file = os.path.join(AUDIO_DIR, f"conv_{conv_id}{lang_suffix}.mp3")
         
         if os.path.exists(audio_file):
             return audio_file
         
         try:
-            tts = gTTS(text=text, lang='ja', slow=False)
+            # Map language codes for gTTS
+            gtts_lang = 'ko' if lang == 'kr' else 'ja'
+            tts = gTTS(text=text, lang=gtts_lang, slow=False)
             tts.save(audio_file)
             return audio_file
         except Exception as e:
